@@ -17,5 +17,6 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
-          /usr/bin/python3 -m py_compile pet.py
+          /usr/bin/python3 -m py_compile pet.py room.py
           /usr/bin/python3 tests/smoke.py
+          /usr/bin/python3 tests/room_smoke.py

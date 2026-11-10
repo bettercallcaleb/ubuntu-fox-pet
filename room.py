@@ -2,6 +2,8 @@ import math
 import random
 import time
 from datetime import datetime
+from pathlib import Path
+import os
 
 from PyQt6.QtCore import QPoint, QPointF, QRectF, Qt, QTimer
 from PyQt6.QtGui import QColor, QCursor, QFont, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap, QPolygonF, QRadialGradient
@@ -66,6 +68,9 @@ def text(p, x, y, text_value, color="#fff0db", size=11, bold=False, align=None):
         p.drawText(QPointF(x, y), text_value)
 
 
+REALISTIC_DIR = Path(os.environ.get("UBUNTU_FOX_REALISTIC_DIR", str(Path.home() / ".local/share/ubuntu-fox-pet/realistic")))
+
+
 class FoxRoom(QWidget):
     INTERACTIONS = {
         "bed": ((160, 418, 180, 104), (297, 500), "Sleep"),
@@ -76,17 +81,38 @@ class FoxRoom(QWidget):
         "tower": ((620, 238, 130, 235), (627, 474), "Climb and jump"),
     }
     BUTTONS = ("bed", "ball", "food", "desk", "window", "tower")
+    PHOTO_INTERACTIONS = {
+        "bed": ((154, 314, 243, 141), (266, 439), "Sleep"),
+        "ball": ((505, 446, 84, 65), (532, 476), "Play ball"),
+        "food": ((577, 419, 117, 85), (662, 485), "Have a treat"),
+        "desk": ((461, 198, 240, 213), (628, 444), "Help at the terminal"),
+        "window": ((270, 122, 152, 201), (405, 441), "Watch the sky"),
+        "tower": ((665, 190, 176, 256), (757, 463), "Climb and jump"),
+    }
 
     def __init__(self, pet):
         super().__init__()
         self.pet = pet
+        self.photo_dir = REALISTIC_DIR
+        self.photo_background = QPixmap(str(self.photo_dir / "room.png"))
+        self.photo_idle = QPixmap(str(self.photo_dir / "idle.png"))
+        self.photo_sleep = QPixmap(str(self.photo_dir / "sleep.png"))
+        self.photo_walk = [
+            QPixmap(str(self.photo_dir / f"walk_{i:02}.png")) for i in range(8)
+        ]
+        self.photo_ready = not self.photo_background.isNull() and not self.photo_idle.isNull() and all(not f.isNull() for f in self.photo_walk)
+        self.photo_mode = self.photo_ready and bool(getattr(pet, "room_realistic", True))
+        self.INTERACTIONS = self.PHOTO_INTERACTIONS if self.photo_mode else type(self).INTERACTIONS
+        self.photo_last_kind = "idle"
+        self.photo_prev_kind = "idle"
+        self.photo_mode_change = time.monotonic()
         self.setWindowTitle("Ubuntu Fox Pet  ·  Cozy Room")
         self.setWindowIcon(pet.windowIcon())
         self.setMinimumSize(760, 520)
         self.resize(1060, 720)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose, False)
         self.setMouseTracking(True)
-        self.position = QPointF(480, 501)
+        self.position = QPointF(518, 477) if self.photo_mode else QPointF(480, 501)
         self.target = None
         self.action = None
         self.hover = None
@@ -222,6 +248,9 @@ class FoxRoom(QWidget):
         p.end()
 
     def draw_room(self, p):
+        if self.photo_mode and self.photo_ready:
+            self.draw_photoreal_room(p)
+            return
         night = self.is_night()
         if night not in self.background_cache:
             cache = QPixmap(1000, 650)
@@ -247,6 +276,78 @@ class FoxRoom(QWidget):
         self.draw_fox(p, now)
         p.drawPixmap(0, 0, self.foreground_cache)
         p.restore()
+
+    def draw_photoreal_room(self, p):
+        night = self.is_night()
+        bounds = QRectF(17, 52, 966, 540)
+        p.save()
+        p.setClipRect(bounds)
+        p.drawPixmap(bounds, self.photo_background, QRectF(self.photo_background.rect()))
+        if night:
+            p.fillRect(bounds, QColor(14, 22, 47, 53))
+            glow(p, 521, 176, 140, "#ffe5b0", 32)
+            glow(p, 574, 195, 120, "#ffc787", 45)
+        else:
+            glow(p, 323, 274, 178, "#fff5d4", 23)
+        self.draw_photo_fox(p, time.monotonic())
+        p.restore()
+        rounded(p, 16, 51, 966, 540, QColor(0,0,0,0), 12, c("#d5b58e", 150), 2)
+
+    def draw_photo_fox(self, p, now):
+        moving = self.target is not None
+        kind = "walk" if moving else ("sleep" if self.mode=="sleep" and not self.photo_sleep.isNull() else "idle")
+        if kind != self.photo_last_kind:
+            self.photo_prev_kind = self.photo_last_kind
+            self.photo_last_kind = kind
+            self.photo_mode_change = now
+        fade = blend((now-self.photo_mode_change)/0.30,0.0,1.0)
+        x, y = self.position.x(), self.position.y()
+        size_scale=blend(.91+(y-445)/590,.82,1.08)
+        jumping=self.mode=="jump" and not moving
+        lift=0
+        if jumping:
+            lift=max(0,math.sin(now*math.pi*3))*26
+        shadow_width=103*size_scale
+        ellipse(p,x-shadow_width*.5,y-9,shadow_width,14,c("#281e18",81))
+        glow(p,x,y-7,45,"#21170d",29)
+
+        def pix_for_state(selected):
+            if selected=="walk":
+                return self.photo_walk[int(now*9.3)%len(self.photo_walk)]
+            if selected=="sleep" and not self.photo_sleep.isNull():
+                return self.photo_sleep
+            return self.photo_idle
+
+        def render(selected,opacity):
+            if opacity < .005:
+                return
+            pix=pix_for_state(selected)
+            if pix.isNull():
+                return
+            h=(138 if selected=="idle" else 105 if selected=="walk" else 80)*size_scale
+            w=h*pix.width()/max(pix.height(),1)
+            breathing = 1+math.sin(now*1.9)*.005 if selected=="idle" else 1
+            bob = abs(math.sin(now*12))*2.1 if selected=="walk" else 0
+            p.save()
+            p.setOpacity(opacity)
+            p.translate(x,y-lift-bob)
+            if selected=="walk" and self.pet.direction>0:
+                p.scale(-1,1)
+            p.drawPixmap(QRectF(-w/2,-h*breathing,w,h*breathing),pix,QRectF(pix.rect()))
+            p.restore()
+
+        if self.photo_prev_kind == kind:
+            render(kind,1.0)
+        else:
+            if fade < 1:
+                render(self.photo_prev_kind,1-fade)
+            render(kind,fade)
+        if self.message and now < self.message_until and not self.pet.quiet:
+            mx=blend(x-70,225,725)
+            my=blend(y-199,95,425)
+            width=min(275,max(130,15+len(self.message)*7))
+            rounded(p,mx,my,width,36,c("#29202a",223),13,c("#cfaf87"),2)
+            text(p,mx+12,my+23,self.message,"#fff4e2",9,True)
 
     def draw_room_static(self, p, night):
         now = time.monotonic()
@@ -529,7 +630,7 @@ class FoxRoom(QWidget):
 
     def draw_ui(self, p):
         rounded(p,17,9,966,45,c("#281a32"),15,c("#a7686d"),1)
-        text(p,42,37,"Ubuntu Fox   /   The Cozy Room","#ffe5c2",15,True)
+        text(p,42,37,"Ubuntu Fox   /   Realistic Room" if self.photo_mode else "Ubuntu Fox   /   Cozy Room","#ffe5c2",15,True)
         text(p,430,36,f"Bond Lv {1+self.pet.bond//25}  ·  {self.pet.bond} ♥","#f5c18e",10,True)
         stats=(("FOOD","food","#f7ad63"),("JOY","joy","#fc9ba6"),("ENERGY","energy","#9ed8b1"))
         for i,(label,key,color) in enumerate(stats):
@@ -565,10 +666,16 @@ class FoxRoom(QWidget):
                     return name
             if 805 <= x <= 960:
                 return "desktop"
-        if math.hypot(x-520,y-505) < 31:
-            return "ball"
-        if math.hypot((x-869)/1.25,(y-526)) < 47:
-            return "food"
+        if self.photo_mode:
+            if math.hypot(x-532,y-475) < 26:
+                return "ball"
+            if math.hypot(x-641,y-465) < 35:
+                return "food"
+        else:
+            if math.hypot(x-520,y-505) < 31:
+                return "ball"
+            if math.hypot((x-869)/1.25,(y-526)) < 47:
+                return "food"
         px,py=self.position.x(),self.position.y()
         if math.hypot((x-px)/.75,(y-(py-75))/.95) < 90:
             return "pet"
@@ -616,6 +723,11 @@ class FoxRoom(QWidget):
         menu=QMenu(self)
         menu.setStyleSheet("QMenu{background:#34213e;color:#fff2dc;border:1px solid #d88b59;padding:5px} QMenu::item:selected{background:#905264}")
         menu.addAction("Back to desktop pet",self.back_to_desktop)
+        photo=menu.addAction("Photorealistic room")
+        photo.setCheckable(True)
+        photo.setEnabled(self.photo_ready)
+        photo.setChecked(self.photo_mode)
+        photo.triggered.connect(self.toggle_photo)
         menu.addSeparator()
         for target in self.BUTTONS:
             menu.addAction(self.INTERACTIONS[target][2],lambda checked=False,t=target:self.go(t))
@@ -630,6 +742,22 @@ class FoxRoom(QWidget):
         quiet.triggered.connect(lambda value:self.pet.set_option("quiet",value))
         menu.addAction("Quit",self.quit_all)
         menu.exec(event.globalPos())
+
+    def toggle_photo(self,enabled):
+        if enabled and not self.photo_ready:
+            return
+        self.photo_mode=enabled
+        self.INTERACTIONS=self.PHOTO_INTERACTIONS if enabled else type(self).INTERACTIONS
+        self.pet.room_realistic=enabled
+        self.position=QPointF(518,477) if enabled else QPointF(480,501)
+        self.target=None
+        self.action=None
+        self.mode="idle"
+        self.photo_last_kind="idle"
+        self.photo_prev_kind="idle"
+        self.photo_mode_change=time.monotonic()
+        self.pet.save()
+        self.update()
 
     def set_night(self,value):
         self.manual_night=value

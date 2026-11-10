@@ -49,6 +49,27 @@ An original, lightweight, animated desktop fox for Ubuntu GNOME and other X11 Li
 - Mouse wheel to resize; all animations are self-contained, with no GPU requirement
 - Lightweight PyQt6 interface; no background services or telemetry
 
+## v5: Local photorealistic room (experimental)
+
+Ubuntu Fox can use a locally generated 3D-render-style room and realistic fox sprites. The default drawing remains available through **right-click → Photorealistic room** and the floating desktop pet still works.
+
+- Physically shaded wood cabin, photorealistic fur and natural animal proportions
+- Eight coherent quadruped walk-cycle frames, blended into the room's continuous positional movement
+- Separate realistic idle and sleeping poses, controlled by room hotspots
+- No GPU or AI model required during gameplay; all generated outputs are PNGs loaded by PyQt6
+- This is **photorealistic 2.5D sprite animation**, not yet a rigged, independently rotatable 3D mesh
+
+**To use the optional local assets:** Generate the four PNGs with a locally licensed Qwen-Image-2.1-Turbo checkpoint, then prepare them:
+
+\`\`\`bash
+python tools/generate_research_assets.py --model-dir /path/to/Qwen-Image-2.1-Turbo --out-dir "$HOME/fox-assets" --only fox_master room_empty walk_sheet sleep_pose
+python tools/prepare_research_assets.py --input "$HOME/fox-assets" --install
+\`\`\`
+
+The generator needs a separate environment with compatible CUDA, PyTorch, Diffusers (QwenImage21Pipeline), Transformers, Pillow and NumPy. Asset preparation needs Pillow and NumPy. The app itself requires only PyQt6.
+
+Generated files are installed into \`~/.local/share/ubuntu-fox-pet/realistic/\`; these files **are not included in this MIT-licensed repository**. The checkpoint used for local evaluation has a **Qwen Research License with non-commercial restrictions**. Model rights, generated-image rights, and any redistribution or commercial use need separate review. Do not upload the model weights or these experimental outputs as MIT-licensed source assets.
+
 ## Install
 
 Tested on Ubuntu 24.04 GNOME **X11**.

@@ -61,6 +61,7 @@ class UbuntuFox(QWidget):
         self.follow = bool(self.data.get("follow", False))
         self.quiet = bool(self.data.get("quiet", False))
         self.room_mode = bool(self.data.get("room_mode", True))
+        self.room_realistic = bool(self.data.get("room_realistic", True))
         self.room_window = None
         self.drag_offset = None
         self.was_dragged = False
@@ -113,7 +114,7 @@ class UbuntuFox(QWidget):
             "version": 3, "stats": {k: round(v, 2) for k, v in self.stats.items()},
             "bond": self.bond, "catches": self.catches,
             "size": self.pet_size, "roam": self.roam, "follow": self.follow,
-            "quiet": self.quiet, "room_mode": self.room_mode, "x": self.x(), "y": self.y(), "saved_at": time.time(),
+            "quiet": self.quiet, "room_mode": self.room_mode, "room_realistic": self.room_realistic, "x": self.x(), "y": self.y(), "saved_at": time.time(),
         }
         tmp = CONFIG.with_suffix(".tmp")
         tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")

@@ -4,13 +4,17 @@ An original, lightweight, animated desktop fox for Ubuntu GNOME and other X11 Li
 
 ![Ubuntu Fox character sheet](assets/source-sheet.png)
 
-## Features (v2)
+## Features (v3)
 
 - Six expressive poses: idle, walk, wave, sleep, surprise, and look
 - Transparent always-on-top window with drag-to-position
 - Click to pet, double-click to play catch, right-click for feeding, sleeping, mood, and settings
 - Food, joy, and energy levels that change over time and are saved locally
 - Optional mouse-following, wandering, quiet mode, and three window sizes
+- Throw the fox gently with the mouse and watch it bounce from desktop edges
+- Right-click Jump / Spin or middle-click to jump; hold left button to cuddle
+- Earn bond points and levels from pets, treats, and ball catches; track your catches
+- Mouse wheel to resize; all animations are self-contained, with no GPU requirement
 - Lightweight PyQt6 interface; no background services or telemetry
 
 ## Install
@@ -36,7 +40,11 @@ Then open **Ubuntu Fox Pet** from the application launcher, or run `~/.local/sha
 | Left-click | Pet the fox; hearts and joy |
 | Double-click | Start a ball game |
 | Click the ball | Catch it |
-| Drag with left button | Reposition |
+| Drag with left button | Reposition; release quickly to toss and bounce |
+| Hold left button | Cuddle and collect hearts |
+| Middle-click | Jump |
+| Mouse wheel | Change size |
+| Right-click → Jump / Spin | Perform a trick |
 | Right-click → Feed cookie | Increase food |
 | Right-click → Show mood & needs | Show three status meters |
 | Right-click → Take a nap / Wake up | Control rest |
@@ -44,7 +52,7 @@ Then open **Ubuntu Fox Pet** from the application launcher, or run `~/.local/sha
 | Right-click → Quiet mode | Suppress speech bubbles |
 | Right-click → Quit | Exit |
 
-Preferences live in `~/.config/ubuntu-fox-pet/state.json` and never leave your machine.
+Preferences, bond points, and catch totals live in `~/.config/ubuntu-fox-pet/state.json` and never leave your machine.
 
 ## Uninstall
 

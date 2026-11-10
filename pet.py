@@ -12,7 +12,13 @@ from PyQt6.QtCore import QPoint, QRectF, Qt, QTimer
 from PyQt6.QtGui import QColor, QCursor, QFont, QIcon, QPainter, QPainterPath, QPixmap
 from PyQt6.QtWidgets import QApplication, QMenu, QWidget
 
-ASSETS = Path.home() / ".local/share/ubuntu-pet"
+APP_DIR = Path(__file__).resolve().parent
+if (APP_DIR / "assets" / "sprites").is_dir():
+    ASSETS = APP_DIR / "assets"
+elif (APP_DIR / "sprites").is_dir():
+    ASSETS = APP_DIR
+else:
+    ASSETS = Path.home() / ".local/share/ubuntu-pet"
 CONFIG = Path.home() / ".config/ubuntu-fox-pet/state.json"
 SPRITES = ("idle", "walk", "wave", "sleep", "surprise", "look")
 
@@ -46,6 +52,8 @@ class UbuntuFox(QWidget):
         self.stats["food"] = clamp(self.stats["food"] - elapsed / 1500)
         self.stats["joy"] = clamp(self.stats["joy"] - elapsed / 2700)
         self.stats["energy"] = clamp(self.stats["energy"] + elapsed / 600)
+        self.bond = int(clamp(self.data.get("bond", 0), 0, 999999))
+        self.catches = int(clamp(self.data.get("catches", 0), 0, 999999))
         self.pet_size = int(self.data.get("size", 190))
         if self.pet_size not in (130, 190, 260):
             self.pet_size = 190
@@ -54,6 +62,13 @@ class UbuntuFox(QWidget):
         self.quiet = bool(self.data.get("quiet", False))
         self.drag_offset = None
         self.was_dragged = False
+        self.drag_last = None
+        self.pressed_at = None
+        self.hold_rewarded = False
+        self.throw_vx = 0.0
+        self.throw_vy = 0.0
+        self.trick_start = None
+        self.trick_kind = None
         self.manual_sleep = False
         self.state = "idle"
         self.direction = -1
@@ -93,7 +108,8 @@ class UbuntuFox(QWidget):
     def save(self):
         CONFIG.parent.mkdir(parents=True, exist_ok=True)
         data = {
-            "version": 2, "stats": {k: round(v, 2) for k, v in self.stats.items()},
+            "version": 3, "stats": {k: round(v, 2) for k, v in self.stats.items()},
+            "bond": self.bond, "catches": self.catches,
             "size": self.pet_size, "roam": self.roam, "follow": self.follow,
             "quiet": self.quiet, "x": self.x(), "y": self.y(), "saved_at": time.time(),
         }
@@ -130,9 +146,26 @@ class UbuntuFox(QWidget):
             })
         self.particles = self.particles[-40:]
 
+    def add_bond(self, amount):
+        self.bond = min(999999, self.bond + amount)
+
+    def trick(self, kind):
+        self.manual_sleep = False
+        self.throw_vx = 0.0
+        self.throw_vy = 0.0
+        self.trick_kind = kind
+        self.trick_start = time.monotonic()
+        self.change_state("wave" if kind == "jump" else "surprise", 1.3)
+        self.stats["energy"] = clamp(self.stats["energy"] - 2)
+        self.add_bond(1)
+        self.hearts(4, "sparkle")
+        self.say("Boing!" if kind == "jump" else "Wheee!", 1.3)
+        self.save()
+
     def pet(self):
         self.manual_sleep = False
         self.stats["joy"] = clamp(self.stats["joy"] + 4)
+        self.add_bond(1)
         self.change_state("wave", 1.7)
         self.hearts()
         self.say(random.choice(("Purrr!", "You're my friend!", "More pats!", "Yay!")), 1.7)
@@ -144,6 +177,7 @@ class UbuntuFox(QWidget):
         self.feed_start = time.monotonic()
         self.stats["food"] = clamp(self.stats["food"] + 22)
         self.stats["joy"] = clamp(self.stats["joy"] + 3)
+        self.add_bond(2)
         self.change_state("wave", 2.1)
         self.hearts(5, "sparkle")
         self.say("Nom nom!", 1.8)
@@ -176,6 +210,8 @@ class UbuntuFox(QWidget):
     def catch(self):
         self.play_start = None
         self.stats["joy"] = clamp(self.stats["joy"] + 5)
+        self.catches = min(999999, self.catches + 1)
+        self.add_bond(5)
         self.hearts(7, "sparkle")
         self.change_state("wave", 2)
         self.say("Great catch!", 2)
@@ -210,10 +246,42 @@ class UbuntuFox(QWidget):
             self.direction = random.choice((-1, 1))
         return choice, {"idle": 5, "walk": 3, "wave": 2, "sleep": 6, "look": 3, "surprise": 1.5}[choice]
 
+    def advance_throw(self, dt):
+        if max(abs(self.throw_vx), abs(self.throw_vy)) < 15:
+            self.throw_vx = 0
+            self.throw_vy = 0
+            return
+        area = self.screen().availableGeometry()
+        x = self.x() + self.throw_vx * dt
+        y = self.y() + self.throw_vy * dt
+        min_x = area.left()
+        max_x = max(min_x, area.right() - self.width() + 1)
+        min_y = area.top()
+        max_y = max(min_y, area.bottom() - self.height() + 1)
+        if x <= min_x or x >= max_x:
+            x = clamp(x, min_x, max_x)
+            self.throw_vx *= -0.5
+            self.hearts(2, "sparkle")
+        if y <= min_y or y >= max_y:
+            y = clamp(y, min_y, max_y)
+            self.throw_vy *= -0.5
+            self.hearts(2, "sparkle")
+        self.move(round(x), round(y))
+        decay = 0.76 ** (dt * 10)
+        self.throw_vx *= decay
+        self.throw_vy *= decay
+
     def tick(self):
         now = time.monotonic()
         dt = clamp(now - self.last_tick, 0, 2)
         self.last_tick = now
+        if self.drag_offset is not None and not self.was_dragged and not self.hold_rewarded:
+            if self.pressed_at is not None and now - self.pressed_at > 0.9:
+                self.hold_rewarded = True
+                self.pet()
+        if self.trick_start is not None and now - self.trick_start > 1.25:
+            self.trick_start = None
+            self.trick_kind = None
         self.stats["food"] = clamp(self.stats["food"] - dt / 1500)
         self.stats["joy"] = clamp(self.stats["joy"] - dt / 2700)
         if self.state == "sleep" or self.manual_sleep:
@@ -230,7 +298,9 @@ class UbuntuFox(QWidget):
         if self.bubble and now > self.bubble_until:
             self.bubble = ""
         if self.drag_offset is None:
-            if self.follow and not self.manual_sleep and self.play_start is None:
+            if abs(self.throw_vx) > 0 or abs(self.throw_vy) > 0:
+                self.advance_throw(dt)
+            elif self.follow and not self.manual_sleep and self.play_start is None:
                 cursor = QCursor.pos()
                 dx = cursor.x() - self.geometry().center().x()
                 dy = cursor.y() - self.geometry().center().y()
@@ -276,9 +346,20 @@ class UbuntuFox(QWidget):
         if self.state == "walk":
             bob = round(abs(math.sin(now * 13)) * 4)
         top = self.height() - h - 12 - bob
+        effect_progress = 0.0
+        if self.trick_start is not None:
+            effect_progress = clamp((now - self.trick_start) / 1.2, 0, 1)
+            if self.trick_kind == "jump":
+                top -= round(math.sin(effect_progress * math.pi) * 52)
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QColor(23, 12, 34, 35))
         p.drawEllipse(QRectF(self.width() * .2, self.height() - 17, self.width() * .6, 10))
+        p.save()
+        if self.trick_start is not None and self.trick_kind == "spin":
+            cx, cy = left + w / 2, top + h / 2
+            p.translate(cx, cy)
+            p.rotate(360 * (1 - (1 - effect_progress) ** 2))
+            p.translate(-cx, -cy)
         if self.state == "walk" and self.direction > 0:
             p.save()
             p.translate(left + w, top)
@@ -287,6 +368,7 @@ class UbuntuFox(QWidget):
             p.restore()
         else:
             p.drawPixmap(left, top, w, h, sprite)
+        p.restore()
         if self.feed_start is not None:
             elapsed = now - self.feed_start
             x = self.width() * .73 - elapsed * 20
@@ -353,7 +435,7 @@ class UbuntuFox(QWidget):
         p.end()
 
     def paint_status(self, p):
-        panel = QRectF(19, 4, self.width() - 38, 77)
+        panel = QRectF(19, 4, self.width() - 38, 102)
         p.setPen(QColor(231, 137, 68, 225))
         p.setBrush(QColor(49, 28, 61, 239))
         p.drawRoundedRect(panel, 11, 11)
@@ -375,11 +457,24 @@ class UbuntuFox(QWidget):
             p.drawRoundedRect(filled, 5, 5)
             p.setPen(QColor("#f8edde"))
             p.drawText(self.width() - 42, y + 9, f"{round(self.stats[key])}")
+        p.setFont(QFont("Sans", 8, QFont.Weight.Bold))
+        p.setPen(QColor("#ffda9e"))
+        p.drawText(QRectF(28, 78, self.width() - 56, 20),
+                   Qt.AlignmentFlag.AlignCenter,
+                   f"Bond Lv {1 + self.bond // 25}   ★ {self.bond}   Catches {self.catches}")
 
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.drag_offset = event.globalPosition().toPoint() - self.pos()
             self.was_dragged = False
+            self.drag_last = (event.globalPosition().toPoint(), time.monotonic())
+            self.pressed_at = time.monotonic()
+            self.hold_rewarded = False
+            self.throw_vx = 0
+            self.throw_vy = 0
+            event.accept()
+        elif event.button() == Qt.MouseButton.MiddleButton:
+            self.trick("jump")
             event.accept()
         else:
             super().mousePressEvent(event)
@@ -390,14 +485,32 @@ class UbuntuFox(QWidget):
             if (target - self.pos()).manhattanLength() > 5:
                 self.was_dragged = True
             self.move(self.clamped_position(target))
+            now = time.monotonic()
+            point, timestamp = self.drag_last or (event.globalPosition().toPoint(), now)
+            elapsed = now - timestamp
+            if elapsed > 0.004:
+                latest = event.globalPosition().toPoint()
+                self.throw_vx = clamp((latest.x() - point.x()) / elapsed, -1100, 1100)
+                self.throw_vy = clamp((latest.y() - point.y()) / elapsed, -1100, 1100)
+                self.drag_last = (latest, now)
             event.accept()
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.drag_offset = None
             if self.was_dragged:
+                now = time.monotonic()
+                if self.drag_last and now - self.drag_last[1] > 0.13:
+                    self.throw_vx = 0
+                    self.throw_vy = 0
+                if math.hypot(self.throw_vx, self.throw_vy) > 220:
+                    self.change_state("surprise", 0.7)
+                    self.hearts(3, "sparkle")
+                else:
+                    self.throw_vx = 0
+                    self.throw_vy = 0
                 self.save()
-            else:
+            elif not self.hold_rewarded:
                 ball = self.ball_pos()
                 if ball and math.hypot(event.position().x() - ball[0], event.position().y() - ball[1]) < 42:
                     self.catch()
@@ -422,6 +535,8 @@ class UbuntuFox(QWidget):
         menu.addAction("Feed cookie", self.feed)
         menu.addAction("Play fetch", self.play)
         menu.addAction("Pet / cuddle", self.pet)
+        menu.addAction("Jump!", lambda: self.trick("jump"))
+        menu.addAction("Spin!", lambda: self.trick("spin"))
         menu.addAction("Show mood & needs", self.show_status)
         menu.addSeparator()
         menu.addAction("Wake up" if self.manual_sleep else "Take a nap", self.wake if self.manual_sleep else self.sleep)
@@ -449,6 +564,13 @@ class UbuntuFox(QWidget):
         if key == "quiet" and enabled:
             self.bubble = ""
         self.save()
+
+    def wheelEvent(self, event):
+        sizes = (130, 190, 260)
+        index = sizes.index(self.pet_size)
+        shift = 1 if event.angleDelta().y() > 0 else -1
+        self.change_size(sizes[int(clamp(index + shift, 0, len(sizes) - 1))])
+        event.accept()
 
     def change_size(self, size):
         anchor = self.geometry().bottomRight()

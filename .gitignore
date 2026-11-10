@@ -9,3 +9,7 @@ dist/
 build/
 state.json
 *.tmp
+
+assets/realistic/
+*.safetensors
+research-outputs/

@@ -60,6 +60,8 @@ class UbuntuFox(QWidget):
         self.roam = bool(self.data.get("roam", True))
         self.follow = bool(self.data.get("follow", False))
         self.quiet = bool(self.data.get("quiet", False))
+        self.room_mode = bool(self.data.get("room_mode", True))
+        self.room_window = None
         self.drag_offset = None
         self.was_dragged = False
         self.drag_last = None
@@ -111,7 +113,7 @@ class UbuntuFox(QWidget):
             "version": 3, "stats": {k: round(v, 2) for k, v in self.stats.items()},
             "bond": self.bond, "catches": self.catches,
             "size": self.pet_size, "roam": self.roam, "follow": self.follow,
-            "quiet": self.quiet, "x": self.x(), "y": self.y(), "saved_at": time.time(),
+            "quiet": self.quiet, "room_mode": self.room_mode, "x": self.x(), "y": self.y(), "saved_at": time.time(),
         }
         tmp = CONFIG.with_suffix(".tmp")
         tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
@@ -297,7 +299,7 @@ class UbuntuFox(QWidget):
         self.particles = [p for p in self.particles if now - p["at"] < 1.55]
         if self.bubble and now > self.bubble_until:
             self.bubble = ""
-        if self.drag_offset is None:
+        if self.drag_offset is None and not self.room_mode:
             if abs(self.throw_vx) > 0 or abs(self.throw_vy) > 0:
                 self.advance_throw(dt)
             elif self.follow and not self.manual_sleep and self.play_start is None:
@@ -523,6 +525,18 @@ class UbuntuFox(QWidget):
             self.play()
             event.accept()
 
+    def open_room(self):
+        from room import FoxRoom
+        if self.room_window is None:
+            self.room_window = FoxRoom(self)
+        self.room_window.show()
+        self.room_window.room_timer.start()
+        self.room_window.raise_()
+        self.room_window.activateWindow()
+        self.room_mode = True
+        self.save()
+        self.hide()
+
     def contextMenuEvent(self, event):
         menu = QMenu(self)
         menu.setStyleSheet(
@@ -531,6 +545,8 @@ class UbuntuFox(QWidget):
         )
         header = menu.addAction("Ubuntu Fox  •  Interactive Pet")
         header.setEnabled(False)
+        menu.addSeparator()
+        menu.addAction("Open cozy room", self.open_room)
         menu.addSeparator()
         menu.addAction("Feed cookie", self.feed)
         menu.addAction("Play fetch", self.play)
@@ -593,6 +609,8 @@ def main():
         return 0
     pet = UbuntuFox()
     pet.show()
+    if pet.room_mode:
+        QTimer.singleShot(180, pet.open_room)
     return app.exec()
 
 

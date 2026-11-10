@@ -13,6 +13,7 @@ fi
 
 mkdir -p "$PREFIX/sprites" "$HOME/.local/share/applications"
 install -m 644 "$ROOT/pet.py" "$PREFIX/pet.py"
+install -m 644 "$ROOT/room.py" "$PREFIX/room.py"
 install -m 644 "$ROOT/assets/icon.png" "$PREFIX/icon.png"
 install -m 644 "$ROOT/assets/sprites/"*.png "$PREFIX/sprites/"
 cat > "$PREFIX/run.sh" <<'SH'

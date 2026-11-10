@@ -1,10 +1,42 @@
 # Ubuntu Fox Pet 🦊
 
+**v4 Cozy Room Mode** — a layered interactive home for your animated Linux desktop companion.
+
+![Ubuntu Fox Cozy Room — daytime](docs/room-preview.png)
+
+![Ubuntu Fox Cozy Room — night lighting](docs/room-night.png)
+
 An original, lightweight, animated desktop fox for Ubuntu GNOME and other X11 Linux desktops. No AI model, network access, account, or GPU required.
 
 ![Ubuntu Fox character sheet](assets/source-sheet.png)
 
-## Features (v3)
+## Features (v4)
+
+- **Cozy Room:** layered 2.5D cabin with bed, ball, food bowl, computer, window and climbing tower
+- Click a furniture hotspot and the fox walks over to interact
+- Day/night window scenery, warm animated string lights, soft shadows, floor perspective and foreground foliage
+- Room status HUD, persistent bond level, local pet needs, floating speech bubbles
+- Classic floating pet is preserved; switch freely between Desktop and Room Mode
+- All graphics are drawn locally using Qt; no AI model, browser, GPU, account or network needed
+
+### Room controls
+
+| Action | Effect |
+|---|---|
+| Right-click desktop fox → Open cozy room | Switch to room |
+| Click bed | Walk over and sleep |
+| Click ball | Play fetch |
+| Click food bowl | Eat a treat |
+| Click terminal desk | Pretend to code |
+| Click window | Gaze outside |
+| Click climbing tower | Jump |
+| Click anywhere on the floor | Walk there |
+| Click the fox | Cuddle and increase bond |
+| Esc or DESKTOP MODE | Return to floating fox |
+| Space | Play fetch |
+| Right-click → Night lighting | Toggle room lighting |
+
+## Classic desktop features
 
 - Six expressive poses: idle, walk, wave, sleep, surprise, and look
 - Transparent always-on-top window with drag-to-position

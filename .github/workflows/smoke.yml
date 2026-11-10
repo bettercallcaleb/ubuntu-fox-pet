@@ -1,0 +1,21 @@
+name: Smoke test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Qt bindings
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pyqt6
+      - name: Compile and smoke test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          /usr/bin/python3 -m py_compile pet.py
+          /usr/bin/python3 tests/smoke.py

@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*.swp
+.venv/
+.env
+*.log
+*.egg-info/
+dist/
+build/
+state.json
+*.tmp

@@ -1,5 +1,15 @@
 # Ubuntu Fox Pet 🦊
 
+## v13 — Ground-Aware Walking + Real Furniture Navigation
+
+The realistic fox now has **separate planted and swinging paws, a two-joint constrained leg solver, terrain-aware body height, paw contact shadows, and obstacle-aware navigation**. It no longer walks directly through the bed, workstation, chair, food bowl or climbing tower. After reaching an activity it turns toward the relevant object, moves its head/ears/tail, and responds to petting.
+
+![v13 actual Ubuntu / RTX 3060 screenshots — feeding and resting](real3d/docs/v13-grounded-fox-showcase.jpg)
+
+**[Watch 12.7 seconds of actual interactive 3D fox behavior](real3d/docs/v13-grounded-fox-interactions.mp4)** · [Navigation and gait implementation](real3d/README.md)
+
+Real Ubuntu/Chrome WebGL 2 test on the RTX 3060: approximately **60 FPS at 1300×820**, with a 271,221-vertex rigged fox. The foot-target constraints limit excessive limb stretching; this is a lightweight animation/contact solver, **not** a full rigid-body animal physics simulation. The existing RTX 4090 OptiX fox still and v12 models are preserved.
+
 ## v12 — Real Fox: upgraded playable desktop pet
 
 **The original desktop pet has finally been upgraded**: a realistic, 271,221-vertex fox skin-retargeted to the existing 29-joint animated rig. New code provides natural four-leg stepping, body motion, ear twitch and tail movement. The original 3D room and its interactions remain playable.

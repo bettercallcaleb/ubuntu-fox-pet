@@ -29,6 +29,11 @@ jobs:
           cd real3d
           npm ci --ignore-scripts --no-audit --no-fund
           node --check scene.js
+          node --check grounded-gait-v13.js
+          node --check navigation-v13.js
+          node check-v13.mjs
+          test -s docs/v13-grounded-fox-interactions.mp4
+          test -s docs/v13-grounded-fox-showcase.jpg
           node rtx4090/check-gallery.mjs
           bash -n rtx4090/launch.sh rtx4090/install.sh rtx4090/reproduce.sh
           node --check neural/main.js

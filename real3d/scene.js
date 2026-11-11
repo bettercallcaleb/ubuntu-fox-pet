@@ -558,11 +558,16 @@ function loadVariant(name){
   setRigClip("idle");
   $("variant").innerHTML="<span>◈</span>"+(name==="realistic"?"Real Fur":name==="enhanced"?"Enhanced":"Classic");
   $("variant").classList.toggle("active",name!=="classic");
-  $("fur").disabled=name!=="classic";
-  $("fur").classList.remove("active");
+  $("fur").disabled=name==="enhanced";
+  $("fur").innerHTML=name==="realistic"?"<span>◎</span>Focus Fox":"<span>≋</span>Fur detail";
+  $("fur").classList.toggle("active",name==="realistic"&&focusMode);
   say(desired.label+" loaded, with "+rigged.names.join(" / ")+" animations.");
   $("status").textContent="GPU: "+gpuName+" · "+rigged.boneCount+" bone skinning · "+rigged.names.length+" animation clips · shadows";
   window.__fox3dRig={variant:name,animations:rigged.names,skinned:true,bones:rigged.boneCount,dimensions:bound.getSize(new THREE.Vector3()).toArray()};
+  if(name==="realistic"&&!rigged.focusInit){
+   rigged.focusInit=true;
+   setFocusMode(true);
+  }
  },undefined,error=>{
   console.error("3D model load error",name,error);
   rigged.loading=false;
@@ -574,6 +579,10 @@ function loadVariant(name){
 loadVariant("realistic");
 $("rig").addEventListener("click",()=>setRiggedEnabled(!rigged.enabled));
 $("fur").addEventListener("click",()=>{
+ if(rigged.variant==="realistic"){
+  setFocusMode(!focusMode);
+  return;
+ }
  rigged.furEnabled=!rigged.furEnabled;
  if(rigged.fur)rigged.fur.visible=rigged.enabled&&rigged.furEnabled;
  $("fur").classList.toggle("active",rigged.furEnabled);
@@ -727,6 +736,19 @@ foxClick.position.set(.14,1,0);foxClick.userData.fox=true;foxRoot.add(foxClick);
 const picking=[foxClick,...clickables,floorPick];
 
 const orbit={azimuth:.36,elevation:.32,radius:11.6,desiredRadius:11.6,focus:new THREE.Vector3(0,1.55,-.35)};
+let focusMode=false;
+function setFocusMode(enabled){
+ focusMode=Boolean(enabled);
+ if(focusMode){
+  orbit.azimuth=.54;orbit.elevation=.24;orbit.radius=4.9;
+  orbit.focus.set(fox.pos.x,.63,fox.pos.z);
+ }else{
+  orbit.azimuth=.36;orbit.elevation=.32;orbit.radius=11.6;
+  orbit.focus.set(0,1.55,-.35);
+ }
+ if(rigged.variant==="realistic")$("fur").classList.toggle("active",focusMode);
+ updateCamera();
+}
 let drag=null;
 function updateCamera(){
  const x=orbit.radius*Math.sin(orbit.azimuth)*Math.cos(orbit.elevation);
@@ -781,7 +803,7 @@ renderer.domElement.style.cursor="grab";
 renderer.domElement.addEventListener("contextmenu",e=>e.preventDefault());
 renderer.domElement.addEventListener("wheel",e=>{
  e.preventDefault();
- orbit.radius=clamp(orbit.radius+Math.sign(e.deltaY)*.54,8.2,17.5);
+ orbit.radius=clamp(orbit.radius+Math.sign(e.deltaY)*.54,3.8,17.5);
  updateCamera();
 },{passive:false});
 document.querySelectorAll("[data-task]").forEach(b=>b.addEventListener("click",()=>task(b.dataset.task)));
@@ -801,7 +823,7 @@ document.addEventListener("keydown",e=>{
  }else if(/Digit[1-6]/.test(e.code)){
   task(["bed","ball","food","desk","window","tower"][Number(e.code.slice(5))-1]);
  }else if(e.code==="KeyF"){
-  orbit.azimuth=.36;orbit.elevation=.32;orbit.radius=11.6;updateCamera();
+  setFocusMode(!focusMode);
  }else if(e.code==="KeyD"){
   $("debug").style.display=$("debug").style.display==="block"?"none":"block";
  }
@@ -855,6 +877,10 @@ function frame(){
    }
   }
   if(t-lastPersist>25){save();lastPersist=t}
+ }
+ if(focusMode){
+  orbit.focus.set(fox.pos.x,.63,fox.pos.z);
+  updateCamera();
  }
  if(performance.now()>noteUntil)notes.style.opacity="0";
  renderer.render(scene,camera);

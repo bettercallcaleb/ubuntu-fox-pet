@@ -10,7 +10,7 @@
 
 The default animal uses 271,221 high-resolution mesh vertices from a CC0 realistic fox, retargeted using Blender to the existing Bake3D 29-bone armature (CC BY 4.0). Unlike sprites, its surface deforms with the skeleton. The initial source animations distorted the realistic geometry, so the app now uses directly animated bone quaternions with blended quadruped gait, subtle head motion, ears and tail.
 
-The original furniture, camera and pet interactions remain usable. Use the character button to cycle Real Fur → Enhanced → Classic. RTX 3060 real-time rendering remains supported. An 1800×1100 OptiX asset preview of this same character was produced on RTX 4090.
+The new Focus Fox camera tracks the animal through the room. Press F or the Focus Fox button to return to the room overview. The original furniture, camera and pet interactions remain usable. Use the character button to cycle Real Fur → Enhanced → Classic. RTX 3060 real-time rendering remains supported. An 1800×1100 OptiX asset preview of this same character was produced on RTX 4090.
 
 Rebuild the generated asset after downloading the CC0 light GLB from https://grab3d.com/models/animals/fox/ :
 

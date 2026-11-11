@@ -10,7 +10,7 @@
 
 [Watch the real 3D walking video](real3d/docs/v12-real-fox-animation.mp4) · [Implementation](real3d/README.md) · [Third-party credits](real3d/assets/CREDITS.md)
 
-The real-time application still works on RTX 3060. The RTX 4090 generated the high-resolution OptiX preview of the very same retargeted model — not an unrelated animal.
+Use the Focus Fox button (F key) to track the realistic animal up close, or return to the wide room view. The real-time application still works on RTX 3060. The RTX 4090 generated the high-resolution OptiX preview of the very same retargeted model — not an unrelated animal.
 
 ## v11 — RTX 4090 Neural Cinema: 4D Gaussian Splatting + OptiX
 

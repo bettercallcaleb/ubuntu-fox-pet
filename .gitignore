@@ -13,3 +13,7 @@ state.json
 assets/realistic/
 *.safetensors
 research-outputs/
+
+real3d/node_modules/
+real3d/.cache/
+real3d/.chrome-profile/

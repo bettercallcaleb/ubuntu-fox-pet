@@ -21,3 +21,16 @@ jobs:
           /usr/bin/python3 tests/smoke.py
           /usr/bin/python3 tests/room_smoke.py
           /usr/bin/python3 tests/photo_room_smoke.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check 3D runtime and assets
+        run: |
+          cd real3d
+          npm ci --ignore-scripts --no-audit --no-fund
+          node --check scene.js
+          node --check fur.js
+          node check-assets.mjs
+          test -s assets/Fox.glb
+          test -s assets/CREDITS.md
+          bash -n launch.sh install.sh

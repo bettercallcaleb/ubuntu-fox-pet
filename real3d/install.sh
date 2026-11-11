@@ -9,8 +9,8 @@ ICON="$(cd "$ROOT/.." && pwd)/assets/icon.png"
 cat > "$HOME/.local/share/applications/ubuntu-fox-real3d.desktop" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Ubuntu Fox — Real 3D
-Comment=Articulated 3D fox room with GPU accelerated lighting
+Name=Ubuntu Fox — Real Fur 3D
+Comment=Realistic 271K-vertex skinned fox with 29-bone gait and PBR room
 Exec=$ROOT/launch.sh
 Icon=$ICON
 Terminal=false

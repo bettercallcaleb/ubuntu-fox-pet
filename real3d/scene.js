@@ -1,6 +1,14 @@
 import * as THREE from "./node_modules/three/build/three.module.js";
 import {GLTFLoader} from "./node_modules/three/examples/jsm/loaders/GLTFLoader.js";
 import {buildSkinnedFur} from "./fur.js";
+import {addShellFur} from "./shellfur.js";
+import {EffectComposer} from "./node_modules/three/examples/jsm/postprocessing/EffectComposer.js";
+import {RenderPass} from "./node_modules/three/examples/jsm/postprocessing/RenderPass.js";
+import {GTAOPass} from "./node_modules/three/examples/jsm/postprocessing/GTAOPass.js";
+import {UnrealBloomPass} from "./node_modules/three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import {ShaderPass} from "./node_modules/three/examples/jsm/postprocessing/ShaderPass.js";
+import {OutputPass} from "./node_modules/three/examples/jsm/postprocessing/OutputPass.js";
+import {RoomEnvironment} from "./node_modules/three/examples/jsm/environments/RoomEnvironment.js";
 import {installPremiumRoom} from "./room-v8.js";
 
 const TAU=Math.PI*2;
@@ -18,6 +26,12 @@ renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.10;
 document.body.prepend(renderer.domElement);
 
+{
+ const pmrem=new THREE.PMREMGenerator(renderer);
+ scene.environment=pmrem.fromScene(new RoomEnvironment(),.04).texture;
+ scene.environmentIntensity=.2;
+ pmrem.dispose();
+}
 const $=x=>document.getElementById(x);
 const rand=(a=1,b=0)=>b+Math.random()*(a-b);
 const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
@@ -110,7 +124,7 @@ const grey=new THREE.MeshStandardMaterial({color:"#626b6d",roughness:.82});
 
 scene.add(new THREE.HemisphereLight("#dbebff","#654031",1.05));
 const sun=new THREE.DirectionalLight("#fff0d7",2.15);sun.position.set(4.5,9,6.2);
-sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+sun.castShadow=true;sun.shadow.mapSize.set(4096,4096);
 sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;
 sun.shadow.camera.near=.1;sun.shadow.camera.far=28;sun.shadow.bias=-.00025;sun.shadow.normalBias=.025;sun.shadow.radius=3;
 scene.add(sun,sun.target);
@@ -504,6 +518,10 @@ function loadVariant(name){
   model.traverse(obj=>{
    if(obj.isSkinnedMesh)rigged.boneCount=Math.max(rigged.boneCount,obj.skeleton.bones.length);
   });
+  rigged.shells=null;
+  model.traverse(obj=>{
+   if(obj.isSkinnedMesh&&!rigged.shells&&obj.material&&obj.material.map)rigged.shells=addShellFur(obj);
+  });
   rigged.mixer=new THREE.AnimationMixer(model);
   rigged.actions={};rigged.names=[];
   for(const clip of gltf.animations){
@@ -516,8 +534,9 @@ function loadVariant(name){
   setRigClip("idle");
   $("variant").innerHTML="<span>◈</span>"+(name==="enhanced"?"Enhanced":"Classic");
   $("variant").classList.toggle("active",name==="enhanced");
-  $("fur").disabled=name==="enhanced";
-  $("fur").classList.remove("active");
+  $("fur").disabled=!rigged.shells;
+  $("fur").classList.toggle("active",Boolean(rigged.shells));
+  rigged.furEnabled=false;
   say(desired.label+" loaded, with "+rigged.names.join(" / ")+" animations.");
   $("status").textContent="GPU: "+gpuName+" · "+rigged.boneCount+" bone skinning · "+rigged.names.length+" animation clips · shadows";
   window.__fox3dRig={variant:name,animations:rigged.names,skinned:true,bones:rigged.boneCount,dimensions:bound.getSize(new THREE.Vector3()).toArray()};
@@ -531,12 +550,17 @@ function loadVariant(name){
 loadVariant("enhanced");
 $("rig").addEventListener("click",()=>setRiggedEnabled(!rigged.enabled));
 $("fur").addEventListener("click",()=>{
+ if(rigged.shells){
+  rigged.shells.visible=!rigged.shells.visible;
+  $("fur").classList.toggle("active",rigged.shells.visible);
+  say(rigged.shells.visible?"Volumetric shell fur on.":"Shell fur off.");
+  return;
+ }
  rigged.furEnabled=!rigged.furEnabled;
  if(rigged.fur)rigged.fur.visible=rigged.enabled&&rigged.furEnabled;
  $("fur").classList.toggle("active",rigged.furEnabled);
  say(rigged.furEnabled?"20,000 skinned fur strands enabled.":"Fur overlay hidden.");
 });
-$("fur").classList.remove("active");
 $("variant").addEventListener("click",()=>loadVariant(rigged.variant==="enhanced"?"classic":"enhanced"));
 
 function updateFox(dt,t){
@@ -781,6 +805,48 @@ $("debug").innerHTML="GPU: "+gpuName+"<br>Vendor: "+gpuVendor+"<br>Renderer: THR
 window.__fox3d={gpuName,gpuVendor,renderer,scene,camera,fox,state,task,updateFox};
 window.__fox3dReady=true;
 
+const post={enabled:true};
+const composer=new EffectComposer(renderer,new THREE.WebGLRenderTarget(innerWidth,innerHeight,{type:THREE.HalfFloatType,samples:4}));
+composer.setPixelRatio(renderer.getPixelRatio());composer.setSize(innerWidth,innerHeight);
+composer.addPass(new RenderPass(scene,camera));
+const gtao=new GTAOPass(scene,camera,innerWidth,innerHeight);
+gtao.output=GTAOPass.OUTPUT.Default;
+gtao.updateGtaoMaterial({radius:.45,distanceExponent:1.4,thickness:1.2,scale:1.1,samples:12,distanceFallOff:1,screenSpaceRadius:false});
+gtao.updatePdMaterial({lumaPhi:10,depthPhi:2,normalPhi:3,radius:5,rings:2,samples:12});
+gtao.blendIntensity=.8;
+{ // keep the alpha-tested fur shells out of the AO normal/depth pass
+ const baseRender=gtao.render.bind(gtao);
+ gtao.render=function(...a){
+  const hidden=[];
+  // alpha-tested fur shells would become solid under the AO material override; the base fox mesh stays in
+  scene.traverse(o=>{if(o.name==="shellFur"&&o.visible){o.visible=false;hidden.push(o)}});
+  // invisible picking proxies (colorWrite:false) would become solid under the AO material override
+  scene.traverse(o=>{if(o.isMesh&&o.visible&&o.material&&o.material.colorWrite===false){o.visible=false;hidden.push(o)}});
+  baseRender(...a);
+  hidden.forEach(o=>o.visible=true);
+ };
+}
+composer.addPass(gtao);
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.22,.65,.88));
+composer.addPass(new OutputPass());
+composer.addPass(new ShaderPass({
+ uniforms:{tDiffuse:{value:null}},
+ vertexShader:"varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}",
+ fragmentShader:`uniform sampler2D tDiffuse;varying vec2 vUv;
+ float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
+ void main(){
+  vec3 c=texture2D(tDiffuse,vUv).rgb;
+  float v=smoothstep(.95,.35,distance(vUv,vec2(.5)));
+  c*=mix(.78,1.,v);
+  c=mix(vec3(dot(c,vec3(.299,.587,.114))),c,1.06);
+  c+=(h(vUv*1000.)-.5)/255.;
+  gl_FragColor=vec4(c,1.);
+ }`
+}));
+window.__fox3dPost={post,gtao,composer};
+$("hint").innerHTML+="<br>Q: toggle post-processing";
+document.addEventListener("keydown",e=>{if(e.code==="KeyQ"){post.enabled=!post.enabled;say(post.enabled?"Post-processing on.":"Post-processing off.")}});
+window.addEventListener("resize",()=>{composer.setSize(innerWidth,innerHeight)});
 const clock=new THREE.Clock();
 let t=0,lastStats=0,lastWander=0,lastPersist=0;
 function frame(){
@@ -811,7 +877,7 @@ function frame(){
   if(t-lastPersist>25){save();lastPersist=t}
  }
  if(performance.now()>noteUntil)notes.style.opacity="0";
- renderer.render(scene,camera);
+ if(post.enabled)composer.render(dt);else renderer.render(scene,camera);
  state.frame++;state.frameTimer+=dt;
  if(state.frameTimer>=.7){
   const fps=Math.round(state.frame/state.frameTimer);

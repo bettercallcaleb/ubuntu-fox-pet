@@ -14,6 +14,11 @@ Built with Three.js and WebGL 2. The default textured fox has 29 skeletal joints
 
 ![v7 enhanced fox with PBR environment](docs/v7-enhanced-fox-pbr.png)
 
+## v9 — Realism pass (shell fur + cinematic lighting)
+
+- **Skinned shell fur** (`shellfur.js`): 28 extruded shells share the fox's skeleton, so fur deforms with Walk / Tail wag / Look around. Strand density is UV-area compensated, length varies by body region (long tail, short ears and paws), with gravity and a slight sway. Alpha-to-coverage keeps edges smooth. The **Fur detail** button toggles it.
+- **Lighting/post**: environment (IBL) lighting, GTAO ambient occlusion, subtle bloom on the string lights, vignette and 4096² sun shadows. Press **Q** to disable post-processing on slower GPUs.
+
 ## v8 — Premium interior rebuild
 
 - Rebuilt the pet bed, workstation, leather chair, climbing tower, and woven rug using softened/beveled 3D furniture meshes.

@@ -21,12 +21,18 @@ const enhanced=check("Fox_Enhanced.glb",29,["Look around","Tail wag","Walk"]);
 const enhancedRaw=parseGlb("Fox_Enhanced.glb");
 const vertices=enhancedRaw.accessors[enhancedRaw.meshes[0].primitives[0].attributes.POSITION].count;
 assert.ok(vertices>40000,"Enhanced fox must retain high-detail mesh");
-for(const prefix of ["WoodFloor051","Plaster001"]){
+for(const prefix of ["WoodFloor051","Plaster001","Fabric030","Carpet011","Leather037"]){
  for(const map of ["Color","NormalGL","Roughness"]){
   const filename="./assets/textures/"+prefix+"_"+map+".jpg";
   assert.ok(statSync(new URL(filename,import.meta.url)).size>100000,filename);
  }
 }
+const sceneSource=readFileSync(new URL("./scene.js",import.meta.url),"utf8");
+const roomSource=readFileSync(new URL("./room-v8.js",import.meta.url),"utf8");
+assert.ok(sceneSource.includes("installPremiumRoom")&&sceneSource.includes("premiumRoom.update(t)"));
+for(const required of ["bed","desk","chair","tower","rug","Fabric030","Carpet011","Leather037"]){
+ assert.ok(roomSource.includes(required),required);
+}
 const attribution=readFileSync(new URL("./assets/CREDITS.md",import.meta.url),"utf8");
 assert.ok(attribution.includes("Bake3D")&&attribution.includes("ambientCG"));
-console.log(JSON.stringify({classic,enhanced,materials:"6 PBR maps",licenseAttribution:true}));
+console.log(JSON.stringify({classic,enhanced,materials:"15 PBR maps",licenseAttribution:true}));

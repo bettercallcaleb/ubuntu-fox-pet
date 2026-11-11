@@ -26,3 +26,16 @@ Application source is MIT-licensed. The separately attributed model retains its 
 - WoodFloor051 and Plaster001: [ambientCG](https://ambientcg.com/), CC0.
 - Included maps: base color, OpenGL normal and roughness in 1K JPEG resolution.
 - The materials are loaded at runtime; GPU hardware and color management settings can influence their appearance.
+
+
+## Atelier habitat PBR materials (v8)
+
+All five texture sets are provided by ambientCG (https://ambientcg.com/) and released under CC0 1.0:
+- Fabric030 — upholstered textiles, cushions, and soft furniture
+- Carpet011 — rug fibers and micro-roughness
+- Leather037 — chair upholstery
+- WoodFloor051 — flooring and furniture timber
+- Plaster001 — architectural plaster
+
+Each set ships 1K color, OpenGL normal, and roughness maps.
+Procedural furniture and artwork geometry are newly authored for this project.

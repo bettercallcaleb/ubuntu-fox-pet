@@ -1,4 +1,4 @@
-# FOX / 03 — True 3D Habitat
+# FOX / 08 — Atelier Habitat
 
 **[Watch the 8-second real 3D motion demo](docs/real3d-motion-demo.mp4)** — recorded from the actual Ubuntu X11/RTX 3060 window at 30 FPS.
 
@@ -8,11 +8,21 @@
 
 A real-time, hardware-accelerated 3D room with a rigged, skinned textured fox, not a moving 2D sprite.
 
-Built with Three.js and WebGL 2. The bundled fox has 24 joints and three animation clips (Survey, Walk and Run). The runtime changes animation clips when the fox navigates. A second procedural fox with articulated legs and analytical two-bone IK is available through the Rigged Fox / IK Fox button.
+Built with Three.js and WebGL 2. The default textured fox has 29 skeletal joints and three animation clips (Walk, Tail wag, Look around); the Classic alternative has 24 joints. The runtime changes animation clips when the fox navigates. A second procedural fox with articulated legs and analytical two-bone IK is available through the Rigged Fox / IK Fox button.
 
 [**Watch v7 actual RTX 3060 motion capture (MP4)**](docs/v7-enhanced-fox-motion.mp4)
 
 ![v7 enhanced fox with PBR environment](docs/v7-enhanced-fox-pbr.png)
+
+## v8 — Premium interior rebuild
+
+- Rebuilt the pet bed, workstation, leather chair, climbing tower, and woven rug using softened/beveled 3D furniture meshes.
+- Expanded from six to **15 PBR material maps**, including fabric, carpet fibers, and leather (ambientCG, CC0).
+- Added wooden wall paneling, skirting, curtains, gallery art, shelves, plants, a table lamp, fabric seams and rope-wrapped posts.
+- Rebalanced cool daylight and warm interior lighting, added localized contact shadows, and retained full camera freedom and room interactions.
+- Tested in Chrome on the RTX 3060: **60 FPS at 1300×820** during the benchmark, no uncaught JavaScript exceptions.
+
+See the [v8 comparison image](docs/v8-comparison.jpg) and [v8 motion recording](docs/v8-room-demo.mp4).
 
 ## v7 — Enhanced rig and PBR environment
 

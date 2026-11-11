@@ -14,7 +14,7 @@ renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.22;
+renderer.toneMappingExposure=1.10;
 document.body.prepend(renderer.domElement);
 
 const $=x=>document.getElementById(x);
@@ -81,14 +81,34 @@ function woodTexture(base="#8a6246",seed=1){
 const cedar=woodTexture("#78523d",1234),spruce=woodTexture("#ab7d59",2345);
 const woodMat=(color,texture)=>new THREE.MeshStandardMaterial({color,map:texture,roughness:.83,metalness:0});
 const floorMat=woodMat("#d9c3a9",cedar),oakMat=woodMat("#d2b89c",spruce);
-const wallMat=new THREE.MeshStandardMaterial({color:"#ab9180",roughness:1});
+const pbrLoader=new THREE.TextureLoader();
+function pbrTexture(file,srgb=false){
+ const texture=pbrLoader.load("./assets/textures/"+file);
+ texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+ texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+ if(srgb)texture.colorSpace=THREE.SRGBColorSpace;
+ return texture;
+}
+const woodPBR=new THREE.MeshStandardMaterial({
+ map:pbrTexture("WoodFloor051_Color.jpg",true),
+ normalMap:pbrTexture("WoodFloor051_NormalGL.jpg"),
+ roughnessMap:pbrTexture("WoodFloor051_Roughness.jpg"),
+ color:"#c5a890",roughness:.86,metalness:0,normalScale:new THREE.Vector2(.33,.33)
+});
+const plasterPBR=new THREE.MeshStandardMaterial({
+ map:pbrTexture("Plaster001_Color.jpg",true),
+ normalMap:pbrTexture("Plaster001_NormalGL.jpg"),
+ roughnessMap:pbrTexture("Plaster001_Roughness.jpg"),
+ color:"#cbb7a6",roughness:.97,metalness:0,normalScale:new THREE.Vector2(.18,.18)
+});
+const wallMat=plasterPBR;
 const fabric=new THREE.MeshStandardMaterial({color:"#774959",roughness:1});
 const blanket=new THREE.MeshStandardMaterial({color:"#e0c4a4",roughness:1});
 const metal=new THREE.MeshStandardMaterial({color:"#29292c",metalness:.68,roughness:.37});
 const grey=new THREE.MeshStandardMaterial({color:"#626b6d",roughness:.82});
 
 scene.add(new THREE.HemisphereLight("#dbebff","#654031",1.05));
-const sun=new THREE.DirectionalLight("#fff0d7",2.6);sun.position.set(4.5,9,6.2);
+const sun=new THREE.DirectionalLight("#fff0d7",2.15);sun.position.set(4.5,9,6.2);
 sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
 sun.shadow.camera.left=-10;sun.shadow.camera.right=10;sun.shadow.camera.top=10;sun.shadow.camera.bottom=-10;
 sun.shadow.camera.near=.1;sun.shadow.camera.far=28;sun.shadow.bias=-.00025;sun.shadow.normalBias=.025;sun.shadow.radius=3;
@@ -100,7 +120,7 @@ const fairy=new THREE.PointLight("#ffbc81",12,6,2);fairy.position.set(-1,3.7,-2.
 const habitat=group(scene);
 box(habitat,0,-.28,-.25,10.7,.55,8.1,materials.darkwood);
 for(let i=0;i<14;i++){
- const z=-4.04+i*.58;box(habitat,0,.015,z,10.53,.08,.565,i%4===0?oakMat:floorMat);
+ const z=-4.04+i*.58;box(habitat,0,.015,z,10.53,.08,.565,woodPBR);
 }
 box(habitat,0,2.3,-4.35,10.7,4.7,.18,wallMat);
 box(habitat,-5.27,2.28,-.25,.23,4.7,8.18,wallMat);
@@ -415,10 +435,14 @@ const fox={
 foxRoot.position.copy(fox.pos);
 foxRoot.rotation.y=.2;
 
-const rigged={ready:false,enabled:true,holder:group(foxRoot),root:null,mixer:null,actions:{},active:null,names:[],fur:null,furEnabled:false};
+const rigged={ready:false,enabled:true,holder:group(foxRoot),root:null,mixer:null,actions:{},active:null,names:[],fur:null,furEnabled:false,variant:"enhanced",boneCount:0,loading:false};
+const variants={
+ enhanced:{asset:"./assets/Fox_Enhanced.glb",idle:"Look around",walk:"Walk",tail:"Tail wag",jump:"Walk",label:"Enhanced 29-bone fox",height:1.43},
+ classic:{asset:"./assets/Fox.glb",idle:"Survey",walk:"Walk",tail:"Survey",jump:"Run",label:"Classic 24-bone fox",height:1.21}
+};
 rigged.holder.rotation.y=Math.PI/2;
 function setRiggedEnabled(value){
- rigged.enabled=value && rigged.ready;
+ rigged.enabled=Boolean(value && rigged.ready);
  rigged.holder.visible=rigged.enabled;
  if(rigged.fur)rigged.fur.visible=rigged.enabled&&rigged.furEnabled;
  torso.visible=!rigged.enabled;
@@ -426,62 +450,84 @@ function setRiggedEnabled(value){
  $("rig").classList.toggle("active",rigged.enabled);
  $("rig").innerHTML="<span>"+(rigged.enabled?"●":"○")+"</span>"+(rigged.enabled?"Rigged Fox":"IK Fox");
 }
-function setRigClip(name){
+function setRigClip(stateName){
  if(!rigged.ready)return;
+ const variant=variants[rigged.variant];
+ const name=stateName==="walk"?variant.walk:stateName==="tail"?variant.tail:stateName==="jump"?variant.jump:variant.idle;
  if(rigged.active===name)return;
- const next=rigged.actions[name]||rigged.actions["Survey"];
+ const next=rigged.actions[name]||rigged.actions[variant.idle];
  if(!next)return;
+ const previous=rigged.active?rigged.actions[rigged.active]:null;
  next.enabled=true;
  next.reset();
- next.setEffectiveTimeScale(name==="Walk"?1.15:1);
+ next.setEffectiveTimeScale(stateName==="walk"?(rigged.variant==="enhanced"?1.05:1.3):1);
  next.setEffectiveWeight(1);
- next.fadeIn(.28).play();
- const previous=rigged.active?rigged.actions[rigged.active]:null;
- if(previous && previous!==next){
-  previous.crossFadeTo(next,.29,false);
- }
+ next.play();
+ if(previous && previous!==next)previous.crossFadeTo(next,.32,true);
+ else next.fadeIn(.32);
  rigged.active=name;
 }
-new GLTFLoader().load("./assets/Fox.glb",gltf=>{
- const model=gltf.scene;
- model.scale.setScalar(.017);
- rigged.holder.add(model);
- model.updateWorldMatrix(true,true);
- const bb=new THREE.Box3().setFromObject(model);
- const center=bb.getCenter(new THREE.Vector3());
- model.position.set(-center.x,-bb.min.y,-center.z);
- model.traverse(child=>{
-  if(child.isMesh||child.isSkinnedMesh){
-   child.castShadow=true;
-   child.receiveShadow=true;
+function loadVariant(name){
+ if(rigged.loading||!variants[name])return;
+ rigged.loading=true;
+ const desired=variants[name];
+ new GLTFLoader().load(desired.asset,gltf=>{
+  if(rigged.mixer)rigged.mixer.stopAllAction();
+  if(rigged.root){
+   rigged.holder.remove(rigged.root);
+   rigged.root=null;
   }
+  const model=gltf.scene;
+  model.scale.setScalar(1);
+  model.position.set(0,0,0);
+  model.updateMatrixWorld(true);
+  let bound=new THREE.Box3().setFromObject(model);
+  const dims=bound.getSize(new THREE.Vector3());
+  const scale=desired.height/Math.max(.01,dims.y);
+  model.scale.setScalar(scale);
+  model.updateMatrixWorld(true);
+  bound=new THREE.Box3().setFromObject(model);
+  const center=bound.getCenter(new THREE.Vector3());
+  model.position.set(-center.x,-bound.min.y,-center.z);
+  rigged.holder.add(model);
+  model.traverse(child=>{
+   if(child.isMesh||child.isSkinnedMesh){
+    child.castShadow=true;
+    child.receiveShadow=true;
+    if(child.material && child.material.map)child.material.map.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),8);
+   }
+  });
+  rigged.root=model;
+  rigged.fur=null;
+  rigged.boneCount=0;
+  model.traverse(obj=>{
+   if(obj.isSkinnedMesh)rigged.boneCount=Math.max(rigged.boneCount,obj.skeleton.bones.length);
+  });
+  rigged.mixer=new THREE.AnimationMixer(model);
+  rigged.actions={};rigged.names=[];
+  for(const clip of gltf.animations){
+   rigged.names.push(clip.name);
+   rigged.actions[clip.name]=rigged.mixer.clipAction(clip);
+   rigged.actions[clip.name].setLoop(THREE.LoopRepeat,Infinity);
+  }
+  rigged.variant=name;rigged.active=null;rigged.ready=true;rigged.loading=false;
+  setRiggedEnabled(true);
+  setRigClip("idle");
+  $("variant").innerHTML="<span>◈</span>"+(name==="enhanced"?"Enhanced":"Classic");
+  $("variant").classList.toggle("active",name==="enhanced");
+  $("fur").disabled=name==="enhanced";
+  $("fur").classList.remove("active");
+  say(desired.label+" loaded, with "+rigged.names.join(" / ")+" animations.");
+  $("status").textContent="GPU: "+gpuName+" · "+rigged.boneCount+" bone skinning · "+rigged.names.length+" animation clips · shadows";
+  window.__fox3dRig={variant:name,animations:rigged.names,skinned:true,bones:rigged.boneCount,dimensions:bound.getSize(new THREE.Vector3()).toArray()};
+ },undefined,error=>{
+  console.error("3D model load error",name,error);
+  rigged.loading=false;
+  if(name!=="classic")loadVariant("classic");
+  else {rigged.ready=false;setRiggedEnabled(false);say("Using procedural fox fallback.");}
  });
- rigged.root=model;
- let skinned=null;
- model.traverse(obj=>{if(obj.isSkinnedMesh&&!skinned)skinned=obj});
- if(skinned){
-  try{
-   rigged.fur=buildSkinnedFur(skinned,20000);
-   if(rigged.fur)rigged.fur.visible=rigged.furEnabled;
-  }catch(e){console.error("Skinned fur overlay disabled",e)}
- }
- rigged.mixer=new THREE.AnimationMixer(model);
- for(const clip of gltf.animations){
-  rigged.names.push(clip.name);
-  rigged.actions[clip.name]=rigged.mixer.clipAction(clip);
-  rigged.actions[clip.name].setLoop(THREE.LoopRepeat,Infinity);
- }
- rigged.ready=true;
- setRiggedEnabled(true);
- setRigClip("Survey");
- say("Loaded a real skinned glTF fox with Survey / Walk / Run clips.");
- $("status").textContent="GPU: "+gpuName+" · 24-bone glTF skinning · 3 rigged clips · realtime shadows · RTX 3060";
- window.__fox3dRig={animations:rigged.names,skinned:true,furStrands:rigged.fur?20000:0,dimensions:bb.getSize(new THREE.Vector3()).toArray()};
-},undefined,err=>{
- console.error("Rigged fox load failed:",err);
- rigged.ready=false;rigged.enabled=false;setRiggedEnabled(false);
- say("Procedural articulated fox fallback loaded.");
-});
+}
+loadVariant("enhanced");
 $("rig").addEventListener("click",()=>setRiggedEnabled(!rigged.enabled));
 $("fur").addEventListener("click",()=>{
  rigged.furEnabled=!rigged.furEnabled;
@@ -490,9 +536,10 @@ $("fur").addEventListener("click",()=>{
  say(rigged.furEnabled?"20,000 skinned fur strands enabled.":"Fur overlay hidden.");
 });
 $("fur").classList.remove("active");
+$("variant").addEventListener("click",()=>loadVariant(rigged.variant==="enhanced"?"classic":"enhanced"));
 
 function updateFox(dt,t){
- const pace=1.16;
+ const pace=rigged.variant==="enhanced"?0.75:1.16;
  if(fox.target){
   const diff=fox.target.clone().sub(fox.pos);diff.y=0;
   const distance=diff.length();
@@ -512,7 +559,7 @@ function updateFox(dt,t){
   }
  }else fox.isWalking=false;
  if(rigged.ready && rigged.enabled){
-  const clip=fox.isWalking?"Walk":fox.action==="jump"?"Run":"Survey";
+  const clip=fox.isWalking?"walk":fox.action==="jump"?"jump":fox.action==="pet"||fox.action==="play"?"tail":"idle";
   setRigClip(clip);
   rigged.mixer.update(dt);
  }

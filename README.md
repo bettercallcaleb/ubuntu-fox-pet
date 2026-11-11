@@ -1,5 +1,16 @@
 # Ubuntu Fox Pet 🦊
 
+[**v7: Actual animated demo video**](real3d/docs/v7-enhanced-fox-motion.mp4)
+
+![v7 RTX 3060 screenshot](real3d/docs/v7-enhanced-fox-pbr.png)
+
+## v7 — Textured fox & real PBR environment
+
+- Default 41,822-vertex Bake3D fox with 29-bone skeleton and three native motion clips.
+- Improved materials: ambientCG WoodFloor051 and Plaster001 PBR textures.
+- Enhanced / Classic rig selector, with procedural IK fallback.
+- Open the **Ubuntu Fox — Real 3D** app. The older PyQt version remains available.
+
 ## v6 — True 3D Habitat (new)
 
 **A real GPU-rendered 3D scene now exists**, separate from the old 2.5D image-based room.

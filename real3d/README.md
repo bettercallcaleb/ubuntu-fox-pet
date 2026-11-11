@@ -6,9 +6,21 @@
 
 ![Same real room from another camera angle](docs/true3d-orbit.png)
 
-A real-time, hardware-accelerated 3D room with a rigged, skinned fox, not a moving 2D sprite.
+A real-time, hardware-accelerated 3D room with a rigged, skinned textured fox, not a moving 2D sprite.
 
 Built with Three.js and WebGL 2. The bundled fox has 24 joints and three animation clips (Survey, Walk and Run). The runtime changes animation clips when the fox navigates. A second procedural fox with articulated legs and analytical two-bone IK is available through the Rigged Fox / IK Fox button.
+
+[**Watch v7 actual RTX 3060 motion capture (MP4)**](docs/v7-enhanced-fox-motion.mp4)
+
+![v7 enhanced fox with PBR environment](docs/v7-enhanced-fox-pbr.png)
+
+## v7 — Enhanced rig and PBR environment
+
+The default fox now uses the Bake3D textured GLB: **41,822 vertices, 29 bones, Walk / Tail wag / Look around**. The glTF skeleton animates the 3D geometry; animation-to-navigation speed is tuned for reduced foot sliding. Switch between **Enhanced** and **Classic** in the bottom toolbar.
+
+The cabin floor and plaster walls use **1K PBR maps** (albedo, normal and roughness) under dynamic GPU lighting. The previous fox remains in the app as a fallback, and the procedural IK version remains available.
+
+Source assets are freely licensed for redistribution with their own terms; credits are documented in [assets/CREDITS.md](assets/CREDITS.md).
 
 ## Ubuntu 24.04 installation
 

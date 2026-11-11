@@ -2,6 +2,20 @@
 
 ## v10 — Neural Habitat (RTX 3060 / Gaussian Splatting)
 
+### Live RTX 3060 captures
+
+**Photographic neural room — 13,297,740 Gaussian splats, original unaltered scan view (fox toggled off)**
+
+![RTX 3060 live neural room screenshot — original photographic scene, fox hidden](real3d/docs/v10-neural-room-living.png)
+
+[Second viewpoint: dining room](real3d/docs/v10-neural-room-dining.png)
+
+**Rigged fox — separately illustrated in our original v8 3D room**
+
+![29-bone skinned fox in our own 3D habitat](real3d/docs/v7-enhanced-fox-pbr.png)
+
+The actual app combines these components locally; the screenshots are presented separately because the house scan's CC BY-ND license does not grant permission to publish an adapted composite. The 3D scan itself is not included in the repository. See [image attribution](real3d/docs/SHOWCASE-CREDITS.md).
+
 A local-only 3D scene built from a photographic scan of a real French house, rendered as 13.3 million Gaussian splats in Spark/Three.js, plus our rigged animated fox. Runs directly on the RTX 3060; verified on Ubuntu X11.
 
 The asset downloader and desktop shortcut are automated; no photos, modeling or manual downloads are required. The previous 3D room is preserved and offers a **Neural World** button.

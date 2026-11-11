@@ -1,5 +1,15 @@
 # Fox Neural Habitat — Local RTX 3060 hybrid demo
 
+## Screenshots from Ubuntu RTX 3060
+
+![v10 local scene screenshot — fox hidden, original scan unchanged](../docs/v10-neural-room-living.png)
+
+![Second room angle](../docs/v10-neural-room-dining.png)
+
+The animal is rendered as a separate skinned 3D layer in the live application. It is intentionally hidden in these published screenshots to avoid distributing an adapted version of the CC BY-ND photographically scanned environment. [Attribution and image terms](../docs/SHOWCASE-CREDITS.md).
+
+For the separately displayed animated fox, see [v7 live 3D render](../docs/v7-enhanced-fox-pbr.png).
+
 The neural demo combines a genuine **13,297,740-Gaussian** photographic scan of a furnished French home with the existing **29-bone animated glTF fox** in one Three.js / Spark renderer.
 
 This is a separate, optional experimental room. The v8 cabin, its interactive furniture, the original PyQt pet and the user's saved configuration remain intact.

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0c1116">
+<title>RTX 4090 // Neural Cinema Lab</title>
+<style>
+:root{color-scheme:dark;--fg:#eeeae4;--sub:#a8abb0;--line:#343942;--accent:#d4ab83;--bg:#0b1016}*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);font-family:Inter,"Segoe UI",system-ui,sans-serif}
+body{background:radial-gradient(ellipse 950px 510px at 60% -25%,#29334468,transparent 70%),linear-gradient(165deg,#121923,#080d11 70%);min-height:100vh}
+main{width:min(1580px,calc(100% - 56px));margin:0 auto;padding:26px 0 40px}
+nav{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:var(--sub);padding-bottom:24px;border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:13px;font-weight:700;letter-spacing:.09em;color:#e9d3b8}.emblem{font-size:26px;display:grid;place-items:center;width:44px;height:44px;border-radius:12px;border:1px solid #aa86585a;background:linear-gradient(135deg,#44382f,#141a23)}
+.links{display:flex;gap:20px;flex-wrap:wrap}a{color:#e7bb8c;text-decoration:none}a:hover{text-decoration:underline}
+header{display:flex;justify-content:space-between;gap:24px;align-items:end;padding:32px 0 24px}
+small,.eyebrow{letter-spacing:.19em;text-transform:uppercase;font-size:11px;color:var(--accent);font-weight:700}
+h1{font-weight:730;font-size:clamp(34px,4.5vw,66px);letter-spacing:-.045em;line-height:1.03;margin:14px 0 10px}
+h1 span{color:#d4ab83}
+.lede{max-width:720px;font-size:15px;line-height:1.75;color:#b5bbc0;margin:0}
+.pill{border:1px solid #575048;border-radius:60px;padding:10px 17px;font-size:12px;color:#ebd0a6;background:#1b1d1e;white-space:nowrap}
+.stage{border-radius:18px;border:1px solid #41484c;background:#05070a;overflow:hidden;box-shadow:0 20px 85px #000c;position:relative}
+#media{aspect-ratio:16/7.7;display:grid;place-items:center;min-height:220px;background:radial-gradient(circle at 55% 30%,#2c3239,#060608 80%);overflow:hidden}
+#media video,#media img{width:100%;height:100%;object-fit:contain;display:block;max-height:790px}
+#media img{object-fit:cover}#media video{background:#050508}
+.corner{position:absolute;pointer-events:none;top:18px;left:18px;display:flex;gap:9px;flex-wrap:wrap}
+.corner span{background:#091018bc;border:1px solid #8d816d66;padding:7px 10px;color:#e7decf;font-size:10px;letter-spacing:.09em;border-radius:6px}
+.controls{background:#10151b;border-top:1px solid #333e44;padding:18px 20px;display:flex;gap:12px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.tabbar{display:flex;gap:9px;flex-wrap:wrap}
+button{cursor:pointer;border:1px solid #4a5360;background:#1c2530;color:#ccd3d9;border-radius:9px;padding:12px 17px;font-size:12px;letter-spacing:.04em;font-weight:650;transition:background .15s}
+button:hover{background:#33404d}button.active{color:#1c1511;background:#d9b18a;border-color:#d9b18a}
+#status{color:#a7adb1;font-size:12px;letter-spacing:.04em}
+.details{display:grid;grid-template-columns:1.2fr 1fr;gap:25px;margin-top:26px}
+.panel{border:1px solid #313941;border-radius:14px;background:#151b22bd;padding:24px 27px;min-width:0}
+.section-label{font-size:10px;letter-spacing:.18em;color:#c9a77e;font-weight:760;text-transform:uppercase}
+#title{font-size:25px;letter-spacing:-.025em;margin:11px 0 7px}
+#description{font-size:14px;line-height:1.8;color:#b2bac0;margin:0;min-height:72px}
+#credit{font-size:11px;color:#8a929b;line-height:1.7;margin:16px 0 0}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:15px}
+.metric{border-top:1px solid #49515a;padding-top:12px}
+.number{font-size:26px;font-weight:700;letter-spacing:-.04em;color:#eee0ca;white-space:nowrap}
+.caption{font-size:11px;color:#9ca5ab;line-height:1.5;margin-top:5px}
+.line{height:1px;background:#39424c;margin:18px 0}
+.highlights{font-size:12px;line-height:2.1;color:#b6bec5;list-style:none;padding:0;margin:0}
+.highlights li:before{content:"◈";margin-right:10px;color:#d7b28f}
+footer{font-size:11px;line-height:1.85;color:#8b949a;padding:20px 1px}
+footer strong{color:#aaaeb0;font-weight:600}
+@media(max-width:980px){.details{grid-template-columns:1fr}header{flex-direction:column;align-items:start}#media{aspect-ratio:16/10}}
+@media(max-width:600px){main{width:calc(100% - 22px);padding-top:12px}nav{flex-direction:column;align-items:start}.stage{border-radius:12px}.controls{padding:12px}.tabbar button{padding:10px}.panel{padding:17px}.number{font-size:19px}.pill{white-space:normal}}
+</style>
+</head>
+<body>
+<main>
+<nav><div class="logo"><div class="emblem">◈</div><span>FOX LAB / EXPERIMENT 4090</span></div><div class="links"><a href="../neural/">Neural Habitat</a><a href="../">Classic 3D</a><a href="https://github.com/bettercallcaleb/ubuntu-fox-pet">Source & provenance</a></div></nav>
+<header><div><div class="eyebrow">GPU research · 4D capture · path-traced volumetrics</div><h1>NEURAL <span>CINEMA</span></h1><p class="lede">A real RTX 4090 rendering experiment: dynamic 4D Gaussian captures, full-precision ray-traced volumetrics and film-grade groomed fur. Source assets and render traces are documented; no promotional CGI is passed off as a live benchmark.</p></div><div class="pill">● 4090 / 24 GB / Blender 5.3</div></header>
+<section class="stage">
+<div id="media"><video src="media/4090-human-4dgs.mp4" muted autoplay loop playsinline controls poster="media/human-4dgs.png"></video></div>
+<div class="corner"><span id="method">4D GAUSSIAN CAPTURE</span><span>RTX 4090 REAL GPU OUTPUT</span><span id="mode">NATIVE VULKAN</span></div>
+<div class="controls"><div class="tabbar"><button data-demo="human" class="active">01 / 4D Motion</button><button data-demo="cat">02 / 4D Ray Tracing</button><button data-demo="fur">03 / Fur Close-up</button></div><div id="status">Original 4D data · 24 fps encoded footage</div></div>
+</section>
+<section class="details">
+<div class="panel"><div class="section-label">Selected demonstration</div><h2 id="title">Captured motion, not a mesh animation</h2><p id="description">Volumetric action reconstructed from time-varying real-world capture. The scene is rendered from actual 4D Gaussian data through Blender 5.3 EEVEE using the RTX 4090 Vulkan device, not a 2D movie texture mapped onto geometry.</p><p id="credit">Original 4D footage and Blender pipeline: Zhi Wang / Mediastorm + 4DV.ai · CC BY 4.0.</p><div class="line"></div><ul class="highlights"><li>Independent 4D temporal data and viewpoint-dependent appearance</li><li>Cycles GPU OptiX path tracing for the infinite-mirror cat scene</li><li>Separate hair groom asset with true volumetric strand shading</li></ul></div>
+<div class="panel"><div class="section-label">Render provenance</div><div class="metrics"><div class="metric"><div class="number">AD102</div><div class="caption">RTX 4090 GPU</div></div><div class="metric"><div class="number">5.3.0</div><div class="caption">Blender native 2026</div></div><div class="metric"><div class="number">4DGS</div><div class="caption">Time-varying volume</div></div></div><div class="line"></div><div class="section-label">Measured output, not a throughput guarantee</div><ul class="highlights"><li>Separate CUDA/OptiX GPU device selection: 4090 only</li><li>Vulkan selection pinned to PCI vendor/device 10de:2684</li><li>Original 3060 pet left running independently</li><li>Artist-authored CC BY sample assets downloaded separately</li></ul><div class="line"></div><p class="caption">The gallery displays recorded frames rendered on the RTX 4090. Video playback FPS is not renderer FPS. Full scene files are not bundled with this repository.</p></div>
+</section>
+<footer><strong>Attribution:</strong> 4D Gaussian demonstrations by Zhi Wang / Mediastorm + 4DV.ai, CC BY 4.0, originally published via Blender Demo Files; Panthera spelaea by Joanna Kobierska (based on Ken Barthelmey), CC BY. The code for this gallery is MIT, while the credited artwork remains under its own license. <a href="README.md">Complete technical details and reproduction</a>.</footer>
+</main>
+<script>
+const demos={
+ human:{path:"media/4090-human-4dgs.mp4",poster:"media/human-4dgs.png",type:"video",method:"4D GAUSSIAN CAPTURE",mode:"NATIVE VULKAN",title:"Captured motion, not a mesh animation",description:"Volumetric action reconstructed from time-varying real-world capture. The scene is rendered from actual 4D Gaussian data through Blender 5.3 EEVEE using the RTX 4090 Vulkan device, not a 2D movie texture mapped onto geometry.",credit:"Zhi Wang / Mediastorm + 4DV.ai · official Blender 4DGS demo · CC BY 4.0.",status:"Original 4D data · 24 fps encoded footage"},
+ cat:{path:"media/4090-cat-cycles-4d.mp4",poster:"media/cat-4dgs.png",type:"video",method:"4D GAUSSIANS + RAY TRACING",mode:"RTX OPTIX",title:"A scanned cat inside an infinite hall of mirrors",description:"The dynamic 4D Gaussian cat is rendered with Cycles GPU OptiX, including reflected image paths, view-dependent surface detail and denoising. The temporal capture is a sequence of volumetric states, not an ordinary rigged animal mesh.",credit:"Zhi Wang / Mediastorm + 4DV.ai · official Blender Cat scene · CC BY 4.0.",status:"RTX 4090 OptiX · physically traced output · 24 fps encoded"},
+ fur:{path:"media/4090-panthera-optix.png",type:"image",method:"GROOMED MICROGEOMETRY",mode:"RTX OPTIX",title:"Individual fur strands in a film-grade close-up",description:"A detailed cave-lion asset rendered with Blender 5.3 Cycles/OptiX on the RTX 4090, including groomed strand geometry, shading, reflections in the eyes and denoised light transport. This is a real render of the sourced scene, not an AI-generated image.",credit:"Panthera spelaea by Joanna Kobierska; lion base by Ken Barthelmey · Blender official demo · CC BY.",status:"1600 × 800 · 64 Cycles samples · OptiX selected"}
+};
+const media=document.querySelector("#media");
+function select(name){
+ const d=demos[name];if(!d)return;
+ media.replaceChildren();
+ const el=document.createElement(d.type==="video"?"video":"img");
+ if(d.type==="video"){el.src=d.path;el.poster=d.poster;el.controls=true;el.autoplay=true;el.muted=true;el.loop=true;el.playsInline=true;el.play().catch(()=>{});}
+ else{el.src=d.path;el.alt=d.title;}
+ media.append(el);
+ document.querySelector("#title").textContent=d.title;
+ document.querySelector("#description").textContent=d.description;
+ document.querySelector("#credit").textContent=d.credit;
+ document.querySelector("#status").textContent=d.status;
+ document.querySelector("#method").textContent=d.method;
+ document.querySelector("#mode").textContent=d.mode;
+ document.querySelectorAll("[data-demo]").forEach(b=>b.classList.toggle("active",b.dataset.demo===name));
+}
+document.querySelectorAll("[data-demo]").forEach(b=>b.addEventListener("click",()=>select(b.dataset.demo)));
+window.addEventListener("keydown",e=>{const index=Number(e.key);if(index>=1&&index<=3)select(["human","cat","fur"][index-1]);});
+</script>
+</body>
+</html>

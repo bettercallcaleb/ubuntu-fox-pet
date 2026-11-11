@@ -29,6 +29,8 @@ jobs:
           cd real3d
           npm ci --ignore-scripts --no-audit --no-fund
           node --check scene.js
+          node rtx4090/check-gallery.mjs
+          bash -n rtx4090/launch.sh rtx4090/install.sh rtx4090/reproduce.sh
           node --check neural/main.js
           node neural/check-neural.mjs
           bash -n neural/install.sh neural/launch.sh

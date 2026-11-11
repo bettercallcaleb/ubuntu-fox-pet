@@ -230,6 +230,7 @@ $("foxButton").addEventListener("click",()=>{
 $("wanderButton").addEventListener("click",()=>{autowalk=!autowalk;$("wanderButton").classList.toggle("active",autowalk)});
 $("resetButton").addEventListener("click",()=>setView("living"));
 $("originalButton").addEventListener("click",()=>{window.location.href="../";});
+$("cinemaButton").addEventListener("click",()=>{window.location.href="../rtx4090/";});
 $("qualityButton").addEventListener("click",()=>{
  qualityMode=qualityMode==="auto"?"performance":qualityMode==="performance"?"cinema":"auto";
  const ratio=qualityMode==="performance"?.75:qualityMode==="cinema"?1.35:1.0;

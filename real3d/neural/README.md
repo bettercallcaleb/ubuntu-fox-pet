@@ -1,5 +1,8 @@
 # Fox Neural Habitat — Local RTX 3060 hybrid demo
 
+For experimental RTX 4090 4D Gaussian ray-tracing and high-detail fur demonstrations, see the separate [Neural Cinema gallery](../rtx4090/README.md).
+
+
 ## Screenshots from Ubuntu RTX 3060
 
 ![v10 local scene screenshot — fox hidden, original scan unchanged](../docs/v10-neural-room-living.png)

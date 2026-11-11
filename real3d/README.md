@@ -1,5 +1,13 @@
 # FOX / 08 — Atelier Habitat
 
+## v11: Separate RTX 4090 Neural Cinema and live editable 4D Studio
+
+[**Watch actual on-device NVIDIA RTX 4090 demo footage**](rtx4090/README.md). Video/gallery and original 4D source studio are accessible from the Ubuntu application menu. Source-art files are deliberately excluded from this repository. The original v8 room and 3060 neural environment are untouched.
+
+![RTX 4090 actual renders](rtx4090/media/rtx4090-showcase.jpg)
+
+
+
 ## v10 Neural Habitat — optional local-only experience
 
 [**Instructions and licenses**](neural/README.md). The new **Neural World** button switches to the Spark / Gaussian Splatting demo: real scanned home, 13.3 million splats, and the same 29-bone fox. Original 3D cabin remains playable. The scan downloads during local installation but is excluded from GitHub.

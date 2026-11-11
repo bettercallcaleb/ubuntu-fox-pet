@@ -1,0 +1,77 @@
+{
+  "created_utc": "2026-11-11T20:24:00.197189+00:00",
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "index": 0,
+    "architecture": "Ada Lovelace AD102",
+    "vram_mib": 24564,
+    "driver": "590.48.01"
+  },
+  "software": {
+    "blender": "5.3.0",
+    "vulkan_forced": "MESA_VK_DEVICE_SELECT=10de:2684!",
+    "cycles": "OPTIX selected NVIDIA GeForce RTX 4090; RTX 3060 disabled"
+  },
+  "dynamic_humans": {
+    "kind": "4D Gaussian Splatting / time-varying capture",
+    "engine": "EEVEE Vulkan, forced RTX 4090",
+    "resolution": [
+      1280,
+      600
+    ],
+    "frames": 120,
+    "output_fps": 24,
+    "elapsed_render_seconds": 32.21,
+    "gpu4090_peak_util_pct": 98.0,
+    "gpu4090_peak_vram_mib": 1463.0,
+    "gpu4090_peak_power_w": 277.01,
+    "telemetry_samples": 115
+  },
+  "dynamic_cat": {
+    "kind": "4D Gaussian Splatting with path-traced mirror reflections",
+    "engine": "Cycles GPU OptiX RTX 4090 only",
+    "resolution": [
+      1152,
+      540
+    ],
+    "frames": 80,
+    "output_fps": 24,
+    "elapsed_render_seconds": 203.14,
+    "gpu4090_peak_util_pct": 100.0,
+    "gpu4090_peak_vram_mib": 3446.0,
+    "gpu4090_peak_power_w": 341.97,
+    "telemetry_samples": 600
+  },
+  "cinematic_animal": {
+    "kind": "physically based groomed hair / native geometry",
+    "output": "4090-panthera-optix.png",
+    "resolution": [
+      1600,
+      800
+    ],
+    "samples": 64,
+    "engine": "Blender 5.3 Cycles GPU OptiX",
+    "selected_device": "NVIDIA GeForce RTX 4090",
+    "elapsed_render_seconds": 32.73
+  },
+  "sources": {
+    "4d_demo": {
+      "url": "https://download.blender.org/demo/geometry-nodes/4D_Gaussian_Splatting-Nunchucks_and_cat.blend",
+      "sha256": "924465bc39d2cc4c55f101eb924ab42357a12f5b108a851ca829f034ce8b8a62",
+      "license": "CC BY 4.0",
+      "artists": "Zhi Wang, Mediastorm and 4DV.ai"
+    },
+    "panthera": {
+      "url": "https://download.blender.org/demo/splash/blender-5.2-splash.blend",
+      "sha256": "a48599e3c1972c70c9d4b206934871d12ba58a6dcf8b25f8c68c5baa0a747082",
+      "license": "CC BY 4.0",
+      "artists": "Joanna Kobierska, based on Ken Barthelmey lion"
+    }
+  },
+  "disclosures": [
+    "These are offline GPU renders. Output video FPS is playback rate and is not real-time rendering throughput.",
+    "Render artifacts are CC BY derivatives of separately credited Blender demo assets; application source MIT.",
+    "Blender 5.3 DLSS Ray Reconstruction was not enabled: installed NVIDIA driver 590.48.01 is below version 620 required for that feature.",
+    "Original .blend source datasets and pretrained weights are not checked into this Git repository."
+  ]
+}

@@ -1,5 +1,16 @@
 # Ubuntu Fox Pet 🦊
 
+## v10 — Neural Habitat (RTX 3060 / Gaussian Splatting)
+
+A local-only 3D scene built from a photographic scan of a real French house, rendered as 13.3 million Gaussian splats in Spark/Three.js, plus our rigged animated fox. Runs directly on the RTX 3060; verified on Ubuntu X11.
+
+The asset downloader and desktop shortcut are automated; no photos, modeling or manual downloads are required. The previous 3D room is preserved and offers a **Neural World** button.
+
+**[Run and license information](real3d/neural/README.md)**
+
+The original house scan by splatmotion3dgs is CC BY-ND 4.0. It is installed locally only and is **not** distributed in this MIT source repository. The real photographic room plus fox is an experimental local visualization, not a redistributable composite asset.
+
+
 [**v7: Actual animated demo video**](real3d/docs/v7-enhanced-fox-motion.mp4)
 
 ![v7 RTX 3060 screenshot](real3d/docs/v7-enhanced-fox-pbr.png)

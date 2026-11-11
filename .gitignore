@@ -17,3 +17,6 @@ research-outputs/
 real3d/node_modules/
 real3d/.cache/
 real3d/.chrome-profile/
+
+real3d/neural/assets/*.sog
+real3d/neural/assets/*.spz

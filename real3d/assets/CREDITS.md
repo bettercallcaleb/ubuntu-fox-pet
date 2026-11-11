@@ -39,3 +39,13 @@ All five texture sets are provided by ambientCG (https://ambientcg.com/) and rel
 
 Each set ships 1K color, OpenGL normal, and roughness maps.
 Procedural furniture and artwork geometry are newly authored for this project.
+
+
+## High-detail realistic fox (v12)
+
+- Source: Grab3D Red Fox, https://grab3d.com/models/animals/fox/ — fox-light.glb.
+- Original animal geometry, surface fur details and texture: Grab3D, CC0 1.0, https://creativecommons.org/publicdomain/zero/1.0/.
+- Retargeted armature and source clips: Bake3D, CC BY 4.0, https://creativecommons.org/licenses/by/4.0/. Attribution is required for their 29-joint skeleton included in Fox_Realistic_Rigged.glb.
+- Changes: removed demonstration assets; reoriented and rescaled the mesh, transferred bone weights to 271,221 realistic vertices in Blender 5.3, and authored new procedural gait/neck/ears/tail animation.
+- Reproducibility script: real3d/tools/rig_realistic_fox.py.
+- RTX 4090 preview: real3d/docs/v12-fox-4090-optix.png, rendered from this exact model using Blender 5.3 Cycles GPU OptiX, 128 samples and 1800×1100 output.

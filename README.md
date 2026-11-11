@@ -1,5 +1,17 @@
 # Ubuntu Fox Pet 🦊
 
+## v12 — Real Fox: upgraded playable desktop pet
+
+**The original desktop pet has finally been upgraded**: a realistic, 271,221-vertex fox skin-retargeted to the existing 29-joint animated rig. New code provides natural four-leg stepping, body motion, ear twitch and tail movement. The original 3D room and its interactions remain playable.
+
+![Actual live desktop pet, new realistic fox](real3d/docs/v12-realistic-fox-live.png)
+
+![Exactly the same upgraded fox rendered on RTX 4090 with Cycles/OptiX](real3d/docs/v12-fox-4090-optix.png)
+
+[Watch the real 3D walking video](real3d/docs/v12-real-fox-animation.mp4) · [Implementation](real3d/README.md) · [Third-party credits](real3d/assets/CREDITS.md)
+
+The real-time application still works on RTX 3060. The RTX 4090 generated the high-resolution OptiX preview of the very same retargeted model — not an unrelated animal.
+
 ## v11 — RTX 4090 Neural Cinema: 4D Gaussian Splatting + OptiX
 
 This is a **measured real RTX 4090 render** on Ubuntu, not an AI-generated concept. Dynamic 4D human motion, a volumetric 4D cat reflected inside ray-traced mirrors, and a 1600×800 film-grade cave-lion fur close-up.

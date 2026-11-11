@@ -7,7 +7,7 @@ if [[ ! -f "$ROOT/node_modules/three/build/three.module.js" ]]; then
   echo "Run npm ci inside $ROOT first" >&2
   exit 2
 fi
-if curl -fsS --max-time 1 "$URL" | grep -q 'FOX / 03'; then
+if curl -fsS --max-time 1 "$URL" | grep -q 'id="rig"'; then
   :
 elif curl -fsS --max-time 1 "$URL" >/dev/null 2>&1; then
   echo "Port $PORT is used by another application" >&2

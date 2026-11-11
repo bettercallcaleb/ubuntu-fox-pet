@@ -37,6 +37,8 @@ jobs:
           node --check room-v8.js
           node --check fur.js
           node check-assets.mjs
+          test -s docs/v12-real-fox-animation.mp4
+          test -s docs/v12-fox-4090-optix.png
           test -s assets/Fox.glb
           test -s assets/CREDITS.md
           bash -n launch.sh install.sh

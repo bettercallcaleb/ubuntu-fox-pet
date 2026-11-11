@@ -1,3 +1,23 @@
+# FOX / 12 — Real Fur Habitat
+
+## v12 — Realistic fox, vertex skinning, real-time quadruped gait
+
+![New skinned fox in actual room](docs/v12-realistic-fox-live.png)
+
+![Same fox path-traced on RTX 4090](docs/v12-fox-4090-optix.png)
+
+[8-second live 3D quadruped gait recording](docs/v12-real-fox-animation.mp4)
+
+The default animal uses 271,221 high-resolution mesh vertices from a CC0 realistic fox, retargeted using Blender to the existing Bake3D 29-bone armature (CC BY 4.0). Unlike sprites, its surface deforms with the skeleton. The initial source animations distorted the realistic geometry, so the app now uses directly animated bone quaternions with blended quadruped gait, subtle head motion, ears and tail.
+
+The original furniture, camera and pet interactions remain usable. Use the character button to cycle Real Fur → Enhanced → Classic. RTX 3060 real-time rendering remains supported. An 1800×1100 OptiX asset preview of this same character was produced on RTX 4090.
+
+Rebuild the generated asset after downloading the CC0 light GLB from https://grab3d.com/models/animals/fox/ :
+
+    blender -b -P real3d/tools/rig_realistic_fox.py -- real3d/assets/Fox_Enhanced.glb /path/to/fox-light.glb real3d/assets/Fox_Realistic_Rigged.glb
+
+License and source references: [assets/CREDITS.md](assets/CREDITS.md).
+
 # FOX / 08 — Atelier Habitat
 
 ## v11: Separate RTX 4090 Neural Cinema and live editable 4D Studio

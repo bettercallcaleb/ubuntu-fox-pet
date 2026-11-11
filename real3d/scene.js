@@ -436,8 +436,9 @@ const fox={
 foxRoot.position.copy(fox.pos);
 foxRoot.rotation.y=.2;
 
-const rigged={ready:false,enabled:true,holder:group(foxRoot),root:null,mixer:null,actions:{},active:null,names:[],fur:null,furEnabled:false,variant:"enhanced",boneCount:0,loading:false};
+const rigged={ready:false,enabled:true,holder:group(foxRoot),root:null,mixer:null,actions:{},active:null,names:[],fur:null,furEnabled:false,variant:"realistic",boneCount:0,loading:false,boneRest:null,bones:null,motionLevel:0};
 const variants={
+ realistic:{asset:"./assets/Fox_Realistic_Rigged.glb",idle:"Look around",walk:"Walk",tail:"Tail wag",jump:"Walk",label:"Realistic fur fox: 29-bone skin",height:1.20},
  enhanced:{asset:"./assets/Fox_Enhanced.glb",idle:"Look around",walk:"Walk",tail:"Tail wag",jump:"Walk",label:"Enhanced 29-bone fox",height:1.43},
  classic:{asset:"./assets/Fox.glb",idle:"Survey",walk:"Walk",tail:"Survey",jump:"Run",label:"Classic 24-bone fox",height:1.21}
 };
@@ -451,8 +452,37 @@ function setRiggedEnabled(value){
  $("rig").classList.toggle("active",rigged.enabled);
  $("rig").innerHTML="<span>"+(rigged.enabled?"●":"○")+"</span>"+(rigged.enabled?"Rigged Fox":"IK Fox");
 }
+const gaitAxis=new THREE.Vector3(1,0,0);
+const wagAxis=new THREE.Vector3(0,0,1);
+const gaitQuaternion=new THREE.Quaternion();
+function updateRealisticSkeleton(dt,t){
+ if(rigged.variant!=="realistic"||!rigged.bones)return;
+ rigged.motionLevel=THREE.MathUtils.damp(rigged.motionLevel,fox.isWalking?1:0,5.5,dt);
+ const amp=rigged.motionLevel;
+ const cycle=fox.phase*Math.PI*2;
+ const apply=(name,axis,angle)=>{
+  const bone=rigged.bones.get(name),rest=rigged.boneRest.get(name);
+  if(!bone||!rest)return;
+  gaitQuaternion.setFromAxisAngle(axis,angle);
+  bone.quaternion.copy(rest).multiply(gaitQuaternion);
+ };
+ for(const [prefix,offset] of [["L0",0],["R0",Math.PI],["L1",Math.PI],["R1",0]]){
+  const step=Math.sin(cycle+offset),lift=Math.max(0,-step);
+  apply("thigh"+prefix,gaitAxis,amp*.18*step);
+  apply("shin"+prefix,gaitAxis,amp*(.11*step+.23*lift));
+  apply("foot"+prefix,gaitAxis,-amp*.12*lift);
+ }
+ apply("hips",wagAxis,amp*.023*Math.sin(cycle*2));
+ apply("neck",gaitAxis,-.014*Math.sin(t*.86)-amp*.022*Math.sin(cycle));
+ apply("head",gaitAxis,.018*Math.sin(t*.72)+amp*.023*Math.sin(cycle)+.012*Math.sin(t*.46));
+ apply("earL",gaitAxis,.035*Math.sin(t*2.2));
+ apply("earR",gaitAxis,-.025*Math.sin(t*1.8));
+ for(let i=0;i<4;i++){
+  apply("tail"+i,wagAxis,(.06+amp*.045)*Math.sin(t*2.05-i*.48));
+ }
+}
 function setRigClip(stateName){
- if(!rigged.ready)return;
+ if(!rigged.ready||rigged.variant==="realistic")return;
  const variant=variants[rigged.variant];
  const name=stateName==="walk"?variant.walk:stateName==="tail"?variant.tail:stateName==="jump"?variant.jump:variant.idle;
  if(rigged.active===name)return;
@@ -461,7 +491,7 @@ function setRigClip(stateName){
  const previous=rigged.active?rigged.actions[rigged.active]:null;
  next.enabled=true;
  next.reset();
- next.setEffectiveTimeScale(stateName==="walk"?(rigged.variant==="enhanced"?1.05:1.3):1);
+ next.setEffectiveTimeScale(stateName==="walk"?(rigged.variant==="classic"?1.3:1.05):1);
  next.setEffectiveWeight(1);
  next.play();
  if(previous && previous!==next)previous.crossFadeTo(next,.32,true);
@@ -501,8 +531,20 @@ function loadVariant(name){
   rigged.root=model;
   rigged.fur=null;
   rigged.boneCount=0;
+  rigged.boneRest=new Map();
+  rigged.bones=new Map();
+  rigged.motionLevel=0;
   model.traverse(obj=>{
-   if(obj.isSkinnedMesh)rigged.boneCount=Math.max(rigged.boneCount,obj.skeleton.bones.length);
+   if(obj.isSkinnedMesh){
+    rigged.boneCount=Math.max(rigged.boneCount,obj.skeleton.bones.length);
+    if(name==="realistic"){
+     obj.skeleton.pose();
+     for(const bone of obj.skeleton.bones){
+      rigged.bones.set(bone.name,bone);
+      rigged.boneRest.set(bone.name,bone.quaternion.clone());
+     }
+    }
+   }
   });
   rigged.mixer=new THREE.AnimationMixer(model);
   rigged.actions={};rigged.names=[];
@@ -514,9 +556,9 @@ function loadVariant(name){
   rigged.variant=name;rigged.active=null;rigged.ready=true;rigged.loading=false;
   setRiggedEnabled(true);
   setRigClip("idle");
-  $("variant").innerHTML="<span>◈</span>"+(name==="enhanced"?"Enhanced":"Classic");
-  $("variant").classList.toggle("active",name==="enhanced");
-  $("fur").disabled=name==="enhanced";
+  $("variant").innerHTML="<span>◈</span>"+(name==="realistic"?"Real Fur":name==="enhanced"?"Enhanced":"Classic");
+  $("variant").classList.toggle("active",name!=="classic");
+  $("fur").disabled=name!=="classic";
   $("fur").classList.remove("active");
   say(desired.label+" loaded, with "+rigged.names.join(" / ")+" animations.");
   $("status").textContent="GPU: "+gpuName+" · "+rigged.boneCount+" bone skinning · "+rigged.names.length+" animation clips · shadows";
@@ -524,11 +566,12 @@ function loadVariant(name){
  },undefined,error=>{
   console.error("3D model load error",name,error);
   rigged.loading=false;
-  if(name!=="classic")loadVariant("classic");
+  if(name==="realistic")loadVariant("enhanced");
+  else if(name!=="classic")loadVariant("classic");
   else {rigged.ready=false;setRiggedEnabled(false);say("Using procedural fox fallback.");}
  });
 }
-loadVariant("enhanced");
+loadVariant("realistic");
 $("rig").addEventListener("click",()=>setRiggedEnabled(!rigged.enabled));
 $("fur").addEventListener("click",()=>{
  rigged.furEnabled=!rigged.furEnabled;
@@ -537,12 +580,12 @@ $("fur").addEventListener("click",()=>{
  say(rigged.furEnabled?"20,000 skinned fur strands enabled.":"Fur overlay hidden.");
 });
 $("fur").classList.remove("active");
-$("variant").addEventListener("click",()=>loadVariant(rigged.variant==="enhanced"?"classic":"enhanced"));
+$("variant").addEventListener("click",()=>loadVariant(rigged.variant==="realistic"?"enhanced":rigged.variant==="enhanced"?"classic":"realistic"));
 $("neural").addEventListener("click",()=>{window.location.href="./neural/";});
 $("cinema").addEventListener("click",()=>{window.location.href="./rtx4090/";});
 
 function updateFox(dt,t){
- const pace=rigged.variant==="enhanced"?0.75:1.16;
+ const pace=rigged.variant==="realistic"?0.74:rigged.variant==="enhanced"?0.75:1.16;
  if(fox.target){
   const diff=fox.target.clone().sub(fox.pos);diff.y=0;
   const distance=diff.length();
@@ -564,11 +607,12 @@ function updateFox(dt,t){
  if(rigged.ready && rigged.enabled){
   const clip=fox.isWalking?"walk":fox.action==="jump"?"jump":fox.action==="pet"||fox.action==="play"?"tail":"idle";
   setRigClip(clip);
-  rigged.mixer.update(dt);
+  if(rigged.variant!=="realistic")rigged.mixer.update(dt);
  }
  fox.root.position.copy(fox.pos);
  fox.root.rotation.y=fox.orientation;
  if(fox.isWalking)fox.phase+=dt*1.85;
+ if(rigged.enabled)updateRealisticSkeleton(dt,t);
  const cycle=fox.phase*TAU;
  const bob=fox.isWalking?.035*Math.sin(cycle*2):.012*Math.sin(t*2.2);
  torso.position.y=bob;

@@ -18,6 +18,11 @@ function check(name,bones,animations){
 }
 const classic=check("Fox.glb",24,["Survey","Walk","Run"]);
 const enhanced=check("Fox_Enhanced.glb",29,["Look around","Tail wag","Walk"]);
+const realistic=check("Fox_Realistic_Rigged.glb",29,["Look around","Tail wag","Walk"]);
+const realisticRaw=parseGlb("Fox_Realistic_Rigged.glb");
+const realisticVertices=realisticRaw.accessors[realisticRaw.meshes[0].primitives[0].attributes.POSITION].count;
+assert.ok(realisticVertices>250000,"Realistic fox must retain high-detail fur geometry");
+
 const enhancedRaw=parseGlb("Fox_Enhanced.glb");
 const vertices=enhancedRaw.accessors[enhancedRaw.meshes[0].primitives[0].attributes.POSITION].count;
 assert.ok(vertices>40000,"Enhanced fox must retain high-detail mesh");
@@ -35,4 +40,4 @@ for(const required of ["bed","desk","chair","tower","rug","Fabric030","Carpet011
 }
 const attribution=readFileSync(new URL("./assets/CREDITS.md",import.meta.url),"utf8");
 assert.ok(attribution.includes("Bake3D")&&attribution.includes("ambientCG"));
-console.log(JSON.stringify({classic,enhanced,materials:"15 PBR maps",licenseAttribution:true}));
+console.log(JSON.stringify({classic,enhanced,realistic,realisticVertices,materials:"15 PBR maps",licenseAttribution:true}));

@@ -11,6 +11,8 @@
 - On the development Ubuntu machine, verified WebGL hardware renderer NVIDIA RTX 3060 at ~60 FPS.
 - Ubuntu launcher: **Ubuntu Fox — Real 3D**. Instructions: [real3d/README.md](real3d/README.md).
 
+[**Watch actual walking and camera orbit (MP4)**](real3d/docs/real3d-motion-demo.mp4)
+
 ![True 3D Ubuntu demo](real3d/docs/true3d-main.png)
 
 **The 2D PyQt app below remains available and is not replaced.**

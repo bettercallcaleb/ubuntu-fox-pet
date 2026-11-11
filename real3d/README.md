@@ -1,5 +1,7 @@
 # FOX / 03 — True 3D Habitat
 
+**[Watch the 8-second real 3D motion demo](docs/real3d-motion-demo.mp4)** — recorded from the actual Ubuntu X11/RTX 3060 window at 30 FPS.
+
 ![True 3D rendered on Ubuntu](docs/true3d-main.png)
 
 ![Same real room from another camera angle](docs/true3d-orbit.png)

@@ -1,5 +1,10 @@
 # FOX / 08 — Atelier Habitat
 
+## v10 Neural Habitat — optional local-only experience
+
+[**Instructions and licenses**](neural/README.md). The new **Neural World** button switches to the Spark / Gaussian Splatting demo: real scanned home, 13.3 million splats, and the same 29-bone fox. Original 3D cabin remains playable. The scan downloads during local installation but is excluded from GitHub.
+
+
 **[Watch the 8-second real 3D motion demo](docs/real3d-motion-demo.mp4)** — recorded from the actual Ubuntu X11/RTX 3060 window at 30 FPS.
 
 ![True 3D rendered on Ubuntu](docs/true3d-main.png)

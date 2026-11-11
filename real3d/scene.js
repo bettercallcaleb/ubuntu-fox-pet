@@ -538,6 +538,7 @@ $("fur").addEventListener("click",()=>{
 });
 $("fur").classList.remove("active");
 $("variant").addEventListener("click",()=>loadVariant(rigged.variant==="enhanced"?"classic":"enhanced"));
+$("neural").addEventListener("click",()=>{window.location.href="./neural/";});
 
 function updateFox(dt,t){
  const pace=rigged.variant==="enhanced"?0.75:1.16;

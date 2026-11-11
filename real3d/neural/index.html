@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fox Neural Habitat · RTX 3060</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0b0c11;color:#edf2ee;font-family:Inter,system-ui,"Segoe UI",sans-serif}
+canvas{display:block}#interface{position:fixed;inset:0;pointer-events:none}#top{position:absolute;top:20px;left:22px;right:22px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.panel{background:rgba(9,16,19,.71);border:1px solid rgba(236,231,200,.14);backdrop-filter:blur(16px);border-radius:14px;padding:14px 17px;box-shadow:0 12px 40px #0005}
+h1{margin:0;font-size:17px;letter-spacing:.035em;font-weight:680}p{margin:4px 0 0;color:#c6cdc5;font-size:12px;line-height:1.5}.label{font-size:10px;letter-spacing:.13em;color:#99ddc1;text-transform:uppercase;margin-bottom:5px}.gold{color:#f8c994}#loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:24px 33px;min-width:300px;text-align:center;transition:opacity .45s}#loadingBar{height:4px;margin-top:16px;background:#354349;border-radius:5px;overflow:hidden}#loadingFill{height:100%;width:4%;background:#d4a977;transition:width .3s}#performance{min-width:270px;font-size:12px;line-height:1.7;color:#bfcfc7;text-align:right}
+#toolbar{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;pointer-events:auto;max-width:96vw;flex-wrap:wrap;justify-content:center}
+button{border:1px solid rgba(221,196,157,.27);background:#222d30;color:#edede7;border-radius:9px;padding:12px 15px;font-size:12px;font-weight:630;cursor:pointer}button:hover{background:#3a504e}button.active{background:#7a5f48;border-color:#ddb789}button:disabled{opacity:.4}
+#help{position:absolute;bottom:94px;right:22px;text-align:right;color:#c4d1c8;font-size:11px;line-height:1.8;text-shadow:0 2px 4px #000a}
+#caption{position:absolute;bottom:99px;left:22px;color:#cfd6ce;font-size:11px;line-height:1.7;text-shadow:0 2px 4px #000a;max-width:370px}
+#notice{position:absolute;top:114px;left:50%;transform:translateX(-50%);padding:8px 16px;background:#202e34d9;border:1px solid #88bea89a;border-radius:12px;font-size:12px;opacity:0;transition:opacity .25s}
+@media(max-width:760px){#performance{display:none}#toolbar{bottom:8px}button{padding:9px}#help{display:none}}
+</style>
+<script type="importmap">
+{"imports":{"three":"../node_modules/three/build/three.module.js","three/addons/":"../node_modules/three/examples/jsm/","@sparkjsdev/spark":"../node_modules/@sparkjsdev/spark/dist/spark.module.js"}}
+</script>
+</head>
+<body>
+<div id="interface">
+<div id="top"><div class="panel"><div class="label">Gaussian splatting × skeletal animation</div><h1>FOX <span class="gold">NEURAL HABITAT</span></h1><p>Real-world scanned home · 13.3 million splats · RTX 3060</p></div><div id="performance" class="panel">Initializing real-time renderer…</div></div>
+<div id="loader" class="panel"><div class="label">Booting photorealistic world</div><h1 id="loadingTitle">Loading captured architecture</h1><p id="loadingSubtitle">Original scanned scene · local asset storage</p><div id="loadingBar"><div id="loadingFill"></div></div></div>
+<div id="notice"></div>
+<div id="caption">Maison Provence — original unaltered 3D capture by splatmotion3dgs, CC BY-ND 4.0. Local evaluation only; not MIT-licensed content.</div>
+<div id="help">Drag: orbit view · Wheel: zoom<br>WASD: move camera · Shift: faster<br>Click floor: send fox · 1–4: views · Fox close-up button</div>
+<div id="toolbar" class="panel">
+<button data-view="living" class="active">Living</button>
+<button data-view="dining">Dining</button>
+<button data-view="fireplace">Fireplace</button>
+<button data-view="fox">Fox close-up</button>
+<button data-view="stairs">Stairs</button>
+<button id="foxButton" class="active">Fox · on</button>
+<button id="wanderButton" class="active">Auto-walk</button>
+<button id="qualityButton">Quality: Auto</button>
+<button id="resetButton">Reset</button>
+<button id="originalButton">Classic Room</button>
+</div>
+</div>
+<script type="module" src="./main.js"></script>
+</body></html>

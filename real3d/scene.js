@@ -1,6 +1,7 @@
 import * as THREE from "./node_modules/three/build/three.module.js";
 import {GLTFLoader} from "./node_modules/three/examples/jsm/loaders/GLTFLoader.js";
 import {buildSkinnedFur} from "./fur.js";
+import {installPremiumRoom} from "./room-v8.js";
 
 const TAU=Math.PI*2;
 const scene=new THREE.Scene();
@@ -292,7 +293,7 @@ function foliage(x,z){
 foliage(-4.6,2.58);foliage(4.72,-2.92);
 for(let i=0;i<7;i++)box(habitat,-3.83+i*.33,2.35,-4.04,.19,.41+Math.sin(i*.8)*.17,.28,i%3===0?materials.purple:oakMat);
 
-function sleepMat(mat){return mat}
+const premiumRoom=installPremiumRoom({scene,habitat,bed,work,chair,tower,rug,food,renderer,sun,lampLight,fairy,windowGlass});
 
 
 const foxRoot=group(scene,0,0,.65);
@@ -788,6 +789,7 @@ function frame(){
  if(!state.paused){
   t+=dt;
   updateFox(dt,t);
+  premiumRoom.update(t);
   ball.position.addScaledVector(state.ballVelocity,dt);
   if(state.ballVelocity.lengthSq()>.0004){
    ball.rotation.z+=state.ballVelocity.length()*dt/.21;

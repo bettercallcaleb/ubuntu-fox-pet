@@ -4,6 +4,14 @@
 
 ![v7 RTX 3060 screenshot](real3d/docs/v7-enhanced-fox-pbr.png)
 
+## v8 — Atelier Habitat: Premium Room
+
+The entire 3D cabin has been upgraded with redesigned furniture, bevels, detailed textiles, richer materials and more natural lighting. A proper 3D scene remains interactive and hardware accelerated.
+
+![v7 versus v8 side-by-side](real3d/docs/v8-comparison.jpg)
+
+[View real GPU-recorded v8 video](real3d/docs/v8-room-demo.mp4)
+
 ## v7 — Textured fox & real PBR environment
 
 - Default 41,822-vertex Bake3D fox with 29-bone skeleton and three native motion clips.

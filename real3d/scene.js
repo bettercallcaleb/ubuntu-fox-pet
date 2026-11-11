@@ -2,6 +2,8 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 import {GLTFLoader} from "./node_modules/three/examples/jsm/loaders/GLTFLoader.js";
 import {buildSkinnedFur} from "./fur.js";
 import {installPremiumRoom} from "./room-v8.js";
+import {createGroundedGait} from "./grounded-gait-v13.js";
+import {route as findRoute,blocked as pathBlocked,groundHeight,NAV_INFO} from "./navigation-v13.js";
 
 const TAU=Math.PI*2;
 const scene=new THREE.Scene();
@@ -162,12 +164,12 @@ for(let i=0;i<19;i++)lightbulb(-4.65+i*.50,-3.83+.18*Math.sin(i*.36));
 
 const clickables=[];
 const targets={
- bed:new THREE.Vector3(-3.25,0,1.25),
+ bed:new THREE.Vector3(-1.70,0,1.25),
  ball:new THREE.Vector3(.2,0,1.35),
- food:new THREE.Vector3(2.4,0,1.58),
- desk:new THREE.Vector3(2.05,0,-.76),
+ food:new THREE.Vector3(1.18,0,1.66),
+ desk:new THREE.Vector3(.94,0,-1.71),
  window:new THREE.Vector3(-1.6,0,-2.1),
- tower:new THREE.Vector3(3.3,0,.8)
+ tower:new THREE.Vector3(2.72,0,.80)
 };
 
 function interactive(g,task){g.userData.task=task;clickables.push(g);return g}
@@ -431,7 +433,7 @@ function ikLeg(L,phase,moving,bob){
 const fox={
  root:foxRoot,torso,head,tail1,tail2,tail3,legs,
  pos:new THREE.Vector3(-.7,0,.65),target:null,orientation:0,
- phase:0,isWalking:false,action:"idle",actionTime:0,eyeTimer:0
+ phase:0,isWalking:false,action:"idle",actionTime:0,eyeTimer:0,route:[],waypointCount:0,faceAngleTarget:null
 };
 foxRoot.position.copy(fox.pos);
 foxRoot.rotation.y=.2;
@@ -446,41 +448,14 @@ rigged.holder.rotation.y=Math.PI/2;
 function setRiggedEnabled(value){
  rigged.enabled=Boolean(value && rigged.ready);
  rigged.holder.visible=rigged.enabled;
+ groundedGait.setVisible(rigged.enabled);
  if(rigged.fur)rigged.fur.visible=rigged.enabled&&rigged.furEnabled;
  torso.visible=!rigged.enabled;
  legs.forEach(L=>L.hip.visible=!rigged.enabled);
  $("rig").classList.toggle("active",rigged.enabled);
  $("rig").innerHTML="<span>"+(rigged.enabled?"●":"○")+"</span>"+(rigged.enabled?"Rigged Fox":"IK Fox");
 }
-const gaitAxis=new THREE.Vector3(1,0,0);
-const wagAxis=new THREE.Vector3(0,0,1);
-const gaitQuaternion=new THREE.Quaternion();
-function updateRealisticSkeleton(dt,t){
- if(rigged.variant!=="realistic"||!rigged.bones)return;
- rigged.motionLevel=THREE.MathUtils.damp(rigged.motionLevel,fox.isWalking?1:0,5.5,dt);
- const amp=rigged.motionLevel;
- const cycle=fox.phase*Math.PI*2;
- const apply=(name,axis,angle)=>{
-  const bone=rigged.bones.get(name),rest=rigged.boneRest.get(name);
-  if(!bone||!rest)return;
-  gaitQuaternion.setFromAxisAngle(axis,angle);
-  bone.quaternion.copy(rest).multiply(gaitQuaternion);
- };
- for(const [prefix,offset] of [["L0",0],["R0",Math.PI],["L1",Math.PI],["R1",0]]){
-  const step=Math.sin(cycle+offset),lift=Math.max(0,-step);
-  apply("thigh"+prefix,gaitAxis,amp*.18*step);
-  apply("shin"+prefix,gaitAxis,amp*(.11*step+.23*lift));
-  apply("foot"+prefix,gaitAxis,-amp*.12*lift);
- }
- apply("hips",wagAxis,amp*.023*Math.sin(cycle*2));
- apply("neck",gaitAxis,-.014*Math.sin(t*.86)-amp*.022*Math.sin(cycle));
- apply("head",gaitAxis,.018*Math.sin(t*.72)+amp*.023*Math.sin(cycle)+.012*Math.sin(t*.46));
- apply("earL",gaitAxis,.035*Math.sin(t*2.2));
- apply("earR",gaitAxis,-.025*Math.sin(t*1.8));
- for(let i=0;i<4;i++){
-  apply("tail"+i,wagAxis,(.06+amp*.045)*Math.sin(t*2.05-i*.48));
- }
-}
+let groundedGait=createGroundedGait({scene,fox,foxRoot,rigged});
 function setRigClip(stateName){
  if(!rigged.ready||rigged.variant==="realistic")return;
  const variant=variants[rigged.variant];
@@ -504,8 +479,20 @@ function loadVariant(name){
  const desired=variants[name];
  new GLTFLoader().load(desired.asset,gltf=>{
   if(rigged.mixer)rigged.mixer.stopAllAction();
+  groundedGait.dispose();
   if(rigged.root){
    rigged.holder.remove(rigged.root);
+   rigged.root.traverse(o=>{
+    if(o.isMesh){
+     o.geometry.dispose();
+     const mats=Array.isArray(o.material)?o.material:[o.material];
+     for(const mat of mats){
+      if(!mat)continue;
+      for(const key of ["map","normalMap","roughnessMap","metalnessMap","emissiveMap"]){if(mat[key])mat[key].dispose()}
+      mat.dispose();
+     }
+    }
+   });
    rigged.root=null;
   }
   const model=gltf.scene;
@@ -553,6 +540,7 @@ function loadVariant(name){
    rigged.actions[clip.name]=rigged.mixer.clipAction(clip);
    rigged.actions[clip.name].setLoop(THREE.LoopRepeat,Infinity);
   }
+  groundedGait=createGroundedGait({scene,fox,foxRoot,rigged});
   rigged.variant=name;rigged.active=null;rigged.ready=true;rigged.loading=false;
   setRiggedEnabled(true);
   setRigClip("idle");
@@ -608,11 +596,23 @@ function updateFox(dt,t){
    let speed=pace*clamp(1-Math.abs(delta)/3,.28,1);
    const step=Math.min(distance,speed*dt);
    fox.pos.addScaledVector(fwd,step);
-   fox.pos.x=clamp(fox.pos.x,-4.62,4.5);fox.pos.z=clamp(fox.pos.z,-3.25,3.12);
+   fox.pos.x=clamp(fox.pos.x,-4.53,4.47);fox.pos.z=clamp(fox.pos.z,-3.20,3.06);
+   fox.orientation=Math.atan2(Math.sin(fox.orientation),Math.cos(fox.orientation));
   }else{
-   fox.target=null;fox.isWalking=false;arrive();
+   if(fox.route.length){
+    fox.target=fox.route.shift();
+    fox.waypointCount++;
+    fox.isWalking=true;
+   }else{
+    fox.target=null;fox.isWalking=false;arrive();
+   }
   }
  }else fox.isWalking=false;
+ if(!fox.isWalking&&fox.faceAngleTarget!==null){
+  const delta=Math.atan2(Math.sin(fox.faceAngleTarget-fox.orientation),Math.cos(fox.faceAngleTarget-fox.orientation));
+  fox.orientation+=clamp(delta,-dt*2.8,dt*2.8);
+  if(Math.abs(delta)<.025)fox.faceAngleTarget=null;
+ }
  if(rigged.ready && rigged.enabled){
   const clip=fox.isWalking?"walk":fox.action==="jump"?"jump":fox.action==="pet"||fox.action==="play"?"tail":"idle";
   setRigClip(clip);
@@ -621,7 +621,7 @@ function updateFox(dt,t){
  fox.root.position.copy(fox.pos);
  fox.root.rotation.y=fox.orientation;
  if(fox.isWalking)fox.phase+=dt*1.85;
- if(rigged.enabled)updateRealisticSkeleton(dt,t);
+ if(rigged.enabled)groundedGait.update(dt,t);
  const cycle=fox.phase*TAU;
  const bob=fox.isWalking?.035*Math.sin(cycle*2):.012*Math.sin(t*2.2);
  torso.position.y=bob;
@@ -671,15 +671,24 @@ function taskTarget(name){
  return x?x.clone():null;
 }
 function walkTo(destination,name=null){
- fox.target=destination;fox.action="walk";state.task=name;
+ const points=findRoute(fox.pos,destination);
+ if(!points.length){
+  say("No clear walking route to that location.");
+  return false;
+ }
+ fox.route=points.slice(1).map(p=>new THREE.Vector3(p.x,0,p.z));
+ fox.target=new THREE.Vector3(points[0].x,0,points[0].z);
+ fox.waypointCount=0;
+ fox.action="walk";fox.faceAngleTarget=null;state.task=name;
  document.querySelectorAll("[data-task]").forEach(b=>b.classList.toggle("active",b.dataset.task===name));
+ return true;
 }
 function task(name){
  if(state.paused){state.paused=false;$("pause").textContent="Ⅱ";}
  const location=taskTarget(name);
  if(!location)return;
  if(fox.action==="sleep")fox.action="idle";
- walkTo(location,name);
+ if(!walkTo(location,name))return;
  const messages={
  bed:"The fox heads to its bed.",
  ball:"Watch its paws: this is a 3D walking cycle.",
@@ -695,6 +704,11 @@ function arrive(){
  state.task=null;
  document.querySelectorAll("[data-task]").forEach(b=>b.classList.remove("active"));
  fox.action=name||"idle";fox.actionTime=performance.now()/1000;
+ const lookAt={bed:[-3.25,1.4],food:[2.3,1.72],desk:[2.45,-2.58],window:[-1.65,-4.2],tower:[4.03,.56]};
+ if(lookAt[name]){
+  const [tx,tz]=lookAt[name];
+  fox.faceAngleTarget=Math.atan2(-(tz-fox.pos.z),tx-fox.pos.x);
+ }
  if(name==="bed"){
   state.energy=clamp(state.energy+12,0,100);
   say("Resting by the warm bed.");
@@ -774,7 +788,7 @@ function onPointerUp(event){
   if(current.userData.task){task(current.userData.task);return;}
   if(current.userData.floor){
    const v=hit.point;
-   walkTo(new THREE.Vector3(clamp(v.x,-4.55,4.52),0,clamp(v.z,-3.25,3.02)));
+   walkTo(new THREE.Vector3(clamp(v.x,-4.53,4.47),0,clamp(v.z,-3.20,3.06)));
    say("Walking through an actual 3D space.");
    return;
   }
@@ -846,7 +860,9 @@ const gpuName=debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParamet
 const gpuVendor=debug?gl.getParameter(debug.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR);
 $("status").textContent="GPU: "+gpuName+" · OpenGL/WebGL 2.0 · Articulated 4-leg IK · 5,000+ fur strands";
 $("debug").innerHTML="GPU: "+gpuName+"<br>Vendor: "+gpuVendor+"<br>Renderer: THREE WebGL<br>Shadowmap: 2048²<br>Frame: <span id='fr'>--</span> FPS<br>Draw calls: <span id='dc'>--</span>";
-window.__fox3d={gpuName,gpuVendor,renderer,scene,camera,fox,state,task,updateFox};
+window.__fox3d={gpuName,gpuVendor,renderer,scene,camera,fox,state,task,updateFox,walkTo};
+window.__fox3dGait={diagnostics:()=>groundedGait.diagnostics(),groundHeight};
+window.__fox3dNavigation={route:findRoute,blocked:pathBlocked,info:NAV_INFO};
 window.__fox3dReady=true;
 
 const clock=new THREE.Clock();

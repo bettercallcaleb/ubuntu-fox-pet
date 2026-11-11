@@ -1,3 +1,21 @@
+# FOX / 13 — Grounded Fox Habitat
+
+## v13 — Planted paws, safer navigation, richer interactions
+
+![Live RTX 3060 feeding and resting screenshots](docs/v13-grounded-fox-showcase.jpg)
+
+[**Watch actual 12.7-second RTX 3060 live 3D recording**](docs/v13-grounded-fox-interactions.mp4)
+
+- The realistic fox uses independent diagonal gait phases, stance and swing contacts, a smooth lifted swing trajectory, anatomically limited iterative bone IK, and a body height model that responds to the raised rug and wooden floor.
+- Four GPU-friendly contact shadows follow the true 3D toe locations. During swing, the corresponding shadow softens. The system maintains the original 29-bone glTF skin and CC0 textured realistic mesh.
+- **A* route planning plus line-of-sight smoothing** keeps the animal clear of the bed, desk, office chair, food bowl and cat tower. All six original task buttons remain usable.
+- The fox approaches furniture from reachable locations and turns toward the interacted object. Food gives a brief head dip, petting produces ear/tail movement, and resting softens the body pose.
+- The original Real Fur / Enhanced / Classic toggles, PBR room, auto-wander, furniture clicking and close-follow camera remain available.
+
+On Ubuntu X11 / RTX 3060, the new interactive scene maintained around **60 FPS at 1300×820** in our browser test, with no uncaught JavaScript errors. Navigation and ground contact remain approximate; this is not a full solid-body collision simulator. Static clearance tests and a live walking/activity test are included.
+
+**Technical files:** grounded-gait-v13.js, navigation-v13.js, check-v13.mjs. No GPU training, external API, or additional proprietary asset is required.
+
 # FOX / 12 — Real Fur Habitat
 
 ## v12 — Realistic fox, vertex skinning, real-time quadruped gait

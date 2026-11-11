@@ -1,5 +1,13 @@
 # Ubuntu Fox Pet 🦊
 
+## v14 — Living Fox: reducing the statue-like look
+
+![Actual RTX 3060 living fox](real3d/docs/v14-living-fox-idle.png)
+
+[Watch the animated animal (real app capture)](real3d/docs/v14-living-fox-motion.mp4) · [Walking view](real3d/docs/v14-living-fox-walk.png) · [Source and tests](real3d/README.md)
+
+The existing 29-bone fox now has breathing, responsive gaze, periodic sniffing, ear flicks, torso balance, and tail follow-through, plus 36,000 vertex-anchored skinned microfur strands. Body height and paw swing were corrected against the rug; the local RTX 3060 Chrome test showed about 60 FPS and no browser JavaScript exceptions. This changes motion and surface silhouette without pretending that the base fox mesh has been replaced by a movie-quality groom.
+
 ## v13 — Ground-Aware Walking + Real Furniture Navigation
 
 The realistic fox now has **separate planted and swinging paws, a two-joint constrained leg solver, terrain-aware body height, paw contact shadows, and obstacle-aware navigation**. It no longer walks directly through the bed, workstation, chair, food bowl or climbing tower. After reaching an activity it turns toward the relevant object, moves its head/ears/tail, and responds to petting.

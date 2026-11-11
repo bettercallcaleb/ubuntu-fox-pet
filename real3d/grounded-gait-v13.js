@@ -1,5 +1,6 @@
 import * as THREE from "./node_modules/three/build/three.module.js";
 import {groundHeight} from "./navigation-v13.js";
+import {createLivingFoxMotion} from "./living-motion-v14.js";
 
 const UP=new THREE.Vector3(0,1,0);
 const gaitQuat=new THREE.Quaternion();
@@ -26,6 +27,7 @@ export function createGroundedGait({scene,fox,foxRoot,rigged}){
  const shadowGeo=new THREE.PlaneGeometry(.43,.28);
  const legs=[];
  let initialized=false,bodyY=0,amplitude=0,bodyBreathe=0;
+ const living=createLivingFoxMotion({fox,rigged});
  let meanError=0,maxError=0,plantedCount=0;
  const initialFootNames=["L0","R0","L1","R1"];
 
@@ -49,7 +51,7 @@ export function createGroundedGait({scene,fox,foxRoot,rigged}){
   const cross=new THREE.Vector3().crossVectors(v2,v3);
   const delta=Math.atan2(ax.dot(cross),clamp(v2.dot(v3),-1,1));
   rotateAroundWorld(joint,ax,clamp(delta*weight,-.14,.14));
-  const limit=joint.name.startsWith("thigh")?.27:joint.name.startsWith("shin")?.24:.08;
+  const limit=joint.name.startsWith("thigh")?.38:joint.name.startsWith("shin")?.32:.10;
   const rest=rigged.boneRest.get(joint.name);
   const off=joint.quaternion.angleTo(rest);
   if(off>limit)joint.quaternion.slerp(rest,1-limit/off);
@@ -96,9 +98,9 @@ export function createGroundedGait({scene,fox,foxRoot,rigged}){
   const activeAction=fox.action==="play"||fox.action==="pet"||fox.action==="food";
   const seconds=Math.max(0,performance.now()/1000-fox.actionTime);
   if((fox.action==="pet"||fox.action==="food"||fox.action==="play")&&seconds>2.6)fox.action="idle";
-  const bob=amplitude*(.012*Math.sin(fox.phase*Math.PI*4))+(1-amplitude)*.004*Math.sin(t*2.15);
-  bodyBreathe=damp(bodyBreathe,tired?-.065:0,3.5,dt);
-  const targetBody=groundHeight(fox.pos.x,fox.pos.z)-.07+bob+bodyBreathe;
+  const bob=amplitude*(.016*Math.sin(fox.phase*Math.PI*4))+(1-amplitude)*.008*Math.sin(t*3.1);
+  bodyBreathe=damp(bodyBreathe,tired?-.075:0,3.5,dt);
+  const targetBody=groundHeight(fox.pos.x,fox.pos.z)-.015+bob+bodyBreathe;
   bodyY=damp(bodyY,targetBody,11,dt);
   foxRoot.position.y=bodyY;
   forward.set(Math.cos(fox.orientation),0,-Math.sin(fox.orientation));
@@ -128,7 +130,7 @@ export function createGroundedGait({scene,fox,foxRoot,rigged}){
     const alpha=clamp((t-leg.swingAt)/leg.swingDuration,0,1);
     const k=ease(alpha);
     leg.target.lerpVectors(leg.from,leg.to,k);
-    leg.target.y=groundHeight(leg.target.x,leg.target.z)+.02+.105*Math.sin(Math.PI*alpha);
+    leg.target.y=groundHeight(leg.target.x,leg.target.z)+.02+.075*Math.sin(Math.PI*alpha);
     if(alpha>=1){
      leg.swing=false;
      leg.target.copy(leg.to);
@@ -161,24 +163,10 @@ export function createGroundedGait({scene,fox,foxRoot,rigged}){
   }
   meanError/=legs.length;
 
-  const qrest=rigged.boneRest,bones=rigged.bones;
-  const bend=(name,axis,angle)=>{
-   const bone=bones.get(name);
-   if(!bone)return;
-   gaitQuat.setFromAxisAngle(axis,angle);
-   bone.quaternion.copy(qrest.get(name)).multiply(gaitQuat);
-  };
-  bend("hips",new THREE.Vector3(0,0,1),amplitude*.018*Math.sin(fox.phase*Math.PI*4));
-  bend("neck",new THREE.Vector3(1,0,0),(tired?.19:fox.action==="food"?.11:0)+.015*Math.sin(t*.65)+amplitude*.012*Math.sin(fox.phase*Math.PI*2));
-  bend("head",new THREE.Vector3(1,0,0),(tired?.24:0)+(fox.action==="food"?.27:fox.action==="desk"?-.12:fox.action==="window"?-.17:0)+.022*Math.sin(t*.87));
-  bend("earL",new THREE.Vector3(1,0,0),.03*Math.sin(t*2.8)+(activeAction?.045:0));
-  bend("earR",new THREE.Vector3(1,0,0),-.025*Math.sin(t*2.2)+(activeAction?-.048:0));
-  for(let i=0;i<4;i++){
-   bend("tail"+i,new THREE.Vector3(0,0,1),(.047+(activeAction?.15:0)+amplitude*.035)*Math.sin(t*(activeAction?5.3:2.2)-i*.47));
-  }
+  living.update(dt,t,amplitude);
  }
  const setVisible=visible=>{for(const l of legs)l.shadow.visible=Boolean(visible)};
- const diagnostics=()=>({ready:initialized,amplitude,bodyY,contactErrorMean:meanError,contactErrorMax:maxError,plantedCount,legs:legs.map(l=>({name:l.name,swing:l.swing,error:l.error,toe:l.toe.getWorldPosition(new THREE.Vector3()).toArray(),goal:l.target.toArray()}))});
+ const diagnostics=()=>({ready:initialized,amplitude,bodyY,contactErrorMean:meanError,contactErrorMax:maxError,plantedCount,secondaryMotion:living.diagnostics(),legs:legs.map(l=>({name:l.name,swing:l.swing,error:l.error,toe:l.toe.getWorldPosition(new THREE.Vector3()).toArray(),goal:l.target.toArray()}))});
  const dispose=()=>{for(const l of legs){scene.remove(l.shadow);l.shadow.material.dispose()}shadowGeo.dispose();texture.dispose()};
  return {update,diagnostics,dispose,setVisible};
 }

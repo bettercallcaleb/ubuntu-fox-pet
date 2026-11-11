@@ -1,3 +1,21 @@
+# FOX / 14 — Living Fox Habitat
+
+## v14 — Expressive secondary motion instead of a rigid fox
+
+![Living fox — idle](docs/v14-living-fox-idle.png)
+
+![Living fox — moving](docs/v14-living-fox-walk.png)
+
+[Watch the RTX 3060 live 7.5-second motion capture](docs/v14-living-fox-motion.mp4)
+
+- A 29-bone secondary-motion controller adds smooth look-around, head pitch, intermittent sniffing, independent ear flicks, breathing, torso counter-motion, and delayed tail wag tied to walking, turning, playing, feeding, and sleeping.
+- Replaced oversized procedural strands with 36,000 short microfur ribbons anchored directly to the high-resolution fox mesh's existing skin weights. Face, paws, and muzzle remain visually legible.
+- Adjusted body height and paw swing to reduce observed maximum toe-target error in the walking test from approximately 0.156 to 0.102 scene units; no claim of physically exact contact.
+- Current app remains a locally rendered Three.js scene with the original CC0 high-resolution fox, the existing 29-bone rig, unchanged task navigation and furniture.
+- Validated in the actual Ubuntu/RTX 3060 Chrome scene: approximately 60 FPS, no JavaScript exceptions, animated idle/walk/play states. Video and PNGs are real app screenshots rather than generated concept art.
+
+For offline checks: `node check-v13.mjs && node check-v14.mjs`. For the actual browser test, launch Chrome with `--remote-debugging-port=9222` and run `FOX_CDP_PORT=9222 node check-v14-live.mjs`. The capture tool `tools/capture-v14-motion.mjs` uses the same CDP port.
+
 # FOX / 13 — Grounded Fox Habitat
 
 ## v13 — Planted paws, safer navigation, richer interactions

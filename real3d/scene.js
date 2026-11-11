@@ -1,6 +1,6 @@
 import * as THREE from "./node_modules/three/build/three.module.js";
 import {GLTFLoader} from "./node_modules/three/examples/jsm/loaders/GLTFLoader.js";
-import {buildSkinnedFur} from "./fur.js";
+import {buildMicroFur} from "./micro-fur-v14.js";
 import {installPremiumRoom} from "./room-v8.js";
 import {createGroundedGait} from "./grounded-gait-v13.js";
 import {route as findRoute,blocked as pathBlocked,groundHeight,NAV_INFO} from "./navigation-v13.js";
@@ -517,12 +517,15 @@ function loadVariant(name){
   });
   rigged.root=model;
   rigged.fur=null;
+  rigged.furEnabled=false;
   rigged.boneCount=0;
   rigged.boneRest=new Map();
   rigged.bones=new Map();
   rigged.motionLevel=0;
+  let realisticSkin=null;
   model.traverse(obj=>{
    if(obj.isSkinnedMesh){
+    if(name==="realistic")realisticSkin=obj;
     rigged.boneCount=Math.max(rigged.boneCount,obj.skeleton.bones.length);
     if(name==="realistic"){
      obj.skeleton.pose();
@@ -533,6 +536,10 @@ function loadVariant(name){
     }
    }
   });
+  if(name==="realistic"&&realisticSkin){
+   rigged.fur=buildMicroFur(realisticSkin,36000,4137);
+   rigged.furEnabled=Boolean(rigged.fur);
+  }
   rigged.mixer=new THREE.AnimationMixer(model);
   rigged.actions={};rigged.names=[];
   for(const clip of gltf.animations){
@@ -551,7 +558,7 @@ function loadVariant(name){
   $("fur").classList.toggle("active",name==="realistic"&&focusMode);
   say(desired.label+" loaded, with "+rigged.names.join(" / ")+" animations.");
   $("status").textContent="GPU: "+gpuName+" · "+rigged.boneCount+" bone skinning · "+rigged.names.length+" animation clips · shadows";
-  window.__fox3dRig={variant:name,animations:rigged.names,skinned:true,bones:rigged.boneCount,dimensions:bound.getSize(new THREE.Vector3()).toArray()};
+  window.__fox3dRig={variant:name,animations:rigged.names,skinned:true,bones:rigged.boneCount,furStrands:rigged.fur?rigged.fur.geometry.getAttribute("position").count/3:0,dimensions:bound.getSize(new THREE.Vector3()).toArray()};
   if(name==="realistic"&&!rigged.focusInit){
    rigged.focusInit=true;
    setFocusMode(true);

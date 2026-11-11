@@ -20,3 +20,8 @@ real3d/.chrome-profile/
 
 real3d/neural/assets/*.sog
 real3d/neural/assets/*.spz
+
+real3d/rtx4090/.build/
+real3d/rtx4090/*.blend
+real3d/rtx4090/*.tar.xz
+real3d/rtx4090/telemetry/*.raw.csv

@@ -1,5 +1,17 @@
 # Ubuntu Fox Pet 🦊
 
+## v11 — RTX 4090 Neural Cinema: 4D Gaussian Splatting + OptiX
+
+This is a **measured real RTX 4090 render** on Ubuntu, not an AI-generated concept. Dynamic 4D human motion, a volumetric 4D cat reflected inside ray-traced mirrors, and a 1600×800 film-grade cave-lion fur close-up.
+
+![Actual RTX 4090 renders: 4D motion, 4D cat with mirror ray tracing, photoreal groomed fur](real3d/rtx4090/media/rtx4090-showcase.jpg)
+
+[**Watch 4D motion (5 seconds)**](real3d/rtx4090/media/4090-human-4dgs.mp4) · [**Watch OptiX 4D cat (3.33 seconds)**](real3d/rtx4090/media/4090-cat-cycles-4d.mp4) · [**Inspect original 4090 fur image**](real3d/rtx4090/media/4090-panthera-optix.png) · [**Reproduce and check GPU provenance**](real3d/rtx4090/README.md)
+
+**RTX 4090 actually measured**: up to 100% GPU, 3,446 MiB VRAM and 342 W while rendering OptiX 4D imagery. Videos play at 24 FPS but are **offline renders**, not a claim of real-time 4D rendering. The demos are credited CC BY 4.0 upstream assets; original large Blender scene files are not uploaded.
+
+
+
 ## v10 — Neural Habitat (RTX 3060 / Gaussian Splatting)
 
 ### Live RTX 3060 captures

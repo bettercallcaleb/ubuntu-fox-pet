@@ -1,0 +1,12 @@
+import {readFileSync} from "node:fs";
+import assert from "node:assert/strict";
+const file=readFileSync(new URL("./assets/Fox.glb",import.meta.url));
+assert.equal(file.toString("utf8",0,4),"glTF");
+const length=file.readUInt32LE(12);
+assert.equal(file.toString("utf8",16,20),"JSON");
+const model=JSON.parse(file.toString("utf8",20,20+length));
+const names=(model.animations||[]).map(x=>x.name);
+for(const name of ["Survey","Walk","Run"])assert.ok(names.includes(name),name);
+assert.equal(model.skins?.[0]?.joints?.length,24);
+assert.ok(model.meshes?.length>=1);
+console.log(JSON.stringify({asset:"Fox.glb",skinJoints:24,animationClips:names,meshCount:model.meshes.length}));

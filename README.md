@@ -1,5 +1,23 @@
 # Ubuntu Fox Pet 🦊
 
+## v6 — True 3D Habitat (new)
+
+**A real GPU-rendered 3D scene now exists**, separate from the old 2.5D image-based room.
+
+- Rigged glTF fox: 24 bones with native Survey, Walk and Run animation clips.
+- Fully 3D, orbitable furniture and room, real-time shadows, raycast navigation and interaction.
+- Toggle between the glTF animation rig and original procedural four-leg IK model.
+- Optional experimental 20,000-strand skinned fur shader, off by default due to early visual quality.
+- On the development Ubuntu machine, verified WebGL hardware renderer NVIDIA RTX 3060 at ~60 FPS.
+- Ubuntu launcher: **Ubuntu Fox — Real 3D**. Instructions: [real3d/README.md](real3d/README.md).
+
+[**Watch actual walking and camera orbit (MP4)**](real3d/docs/real3d-motion-demo.mp4)
+
+![True 3D Ubuntu demo](real3d/docs/true3d-main.png)
+
+**The 2D PyQt app below remains available and is not replaced.**
+
+
 **v4 Cozy Room Mode** — a layered interactive home for your animated Linux desktop companion.
 
 ![Ubuntu Fox Cozy Room — daytime](docs/room-preview.png)
@@ -61,14 +79,14 @@ Ubuntu Fox can use a locally generated 3D-render-style room and realistic fox sp
 
 **To use the optional local assets:** Generate the four PNGs with a locally licensed Qwen-Image-2.1-Turbo checkpoint, then prepare them:
 
-\`\`\`bash
+```bash
 python tools/generate_research_assets.py --model-dir /path/to/Qwen-Image-2.1-Turbo --out-dir "$HOME/fox-assets" --only fox_master room_empty walk_sheet sleep_pose
 python tools/prepare_research_assets.py --input "$HOME/fox-assets" --install
-\`\`\`
+```
 
 The generator needs a separate environment with compatible CUDA, PyTorch, Diffusers (QwenImage21Pipeline), Transformers, Pillow and NumPy. Asset preparation needs Pillow and NumPy. The app itself requires only PyQt6.
 
-Generated files are installed into \`~/.local/share/ubuntu-fox-pet/realistic/\`; these files **are not included in this MIT-licensed repository**. The checkpoint used for local evaluation has a **Qwen Research License with non-commercial restrictions**. Model rights, generated-image rights, and any redistribution or commercial use need separate review. Do not upload the model weights or these experimental outputs as MIT-licensed source assets.
+Generated files are installed into `~/.local/share/ubuntu-fox-pet/realistic/`; these files **are not included in this MIT-licensed repository**. The checkpoint used for local evaluation has a **Qwen Research License with non-commercial restrictions**. Model rights, generated-image rights, and any redistribution or commercial use need separate review. Do not upload the model weights or these experimental outputs as MIT-licensed source assets.
 
 ## Install
 

@@ -1,0 +1,1 @@
+{"name":"ubuntu-fox-real3d","private":true,"type":"module","scripts":{"start":"python3 -m http.server 8765"},"dependencies":{"three":"^0.181.2"}}

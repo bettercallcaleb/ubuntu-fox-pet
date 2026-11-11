@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Ubuntu Fox · Real 3D</title>
+<style>
+:root {color-scheme:dark; font-family:Inter,"Segoe UI",sans-serif; --glass:rgba(17,14,25,.74); --stroke:rgba(255,230,192,.19); --accent:#ffc184;}
+* {box-sizing:border-box}
+body {margin:0;background:#121019;color:#f4e8d7;overflow:hidden;user-select:none}
+canvas {display:block}
+#hud {position:fixed;inset:0;pointer-events:none}
+#top {position:absolute;top:18px;left:20px;right:20px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.panel {background:var(--glass);border:1px solid var(--stroke);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:14px;box-shadow:0 12px 38px #08071248;padding:13px 17px}
+#brand h1 {font-size:16px;margin:0 0 4px;font-weight:640;letter-spacing:.02em}
+#brand p {font-size:11px;margin:0;color:#cdb8aa;line-height:1.5}
+#stats {display:flex;gap:17px}
+.metric {width:97px}.metric span {display:flex;justify-content:space-between;font-size:10px;letter-spacing:.06em;color:#e5d9cc}
+.track {height:5px;border-radius:4px;background:#493741;margin-top:7px;overflow:hidden}
+.track i {display:block;height:100%;border-radius:4px;background:#f6b77e;width:65%;transition:width .3s}
+#joybar {background:#dc95b2} #energybar{background:#8fcbb1}
+#bottom {position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;pointer-events:auto;max-width:calc(100vw - 30px)}
+button {border:1px solid #c299744d;border-radius:11px;background:#2a212b;color:#f7e9d5;padding:12px 14px;font-weight:600;letter-spacing:.01em;font-size:12px;cursor:pointer;min-width:91px;transition:background .12s,transform .12s}
+button:hover {background:#58413a;transform:translateY(-2px)}
+button:active {transform:translateY(0)}
+button.active {border-color:#ffce9c;background:#804a36}
+button span {font-size:16px;display:block;margin-bottom:4px}
+#hint {position:absolute;right:21px;bottom:108px;font-size:11px;line-height:1.8;color:#e7d4c9;text-align:right;text-shadow:0 2px 3px #22151b}
+#note {position:absolute;left:50%;top:108px;transform:translateX(-50%);text-align:center;background:#281d2cbd;border:1px solid #be805e99;color:#ffe8cd;padding:10px 19px;border-radius:14px;font-size:13px;opacity:0;transition:opacity .28s}
+#status {position:absolute;left:21px;bottom:108px;font-size:11px;color:#edc69c;line-height:1.7;text-shadow:0 2px 4px #1b1015;max-width:360px}
+#debug {position:absolute;top:107px;right:20px;min-width:190px;padding:11px;font:11px/1.8 monospace;color:#c2d0d9;background:#151722aa;display:none}
+#pause {position:absolute;right:20px;top:89px;pointer-events:auto;background:#2c2833ba;min-width:50px;padding:8px 12px}
+@media(max-width:850px){#stats{display:none}#bottom{width:calc(100vw - 12px);justify-content:center;flex-wrap:wrap;bottom:8px}button{padding:9px;min-width:72px}#hint{display:none}}
+</style>
+</head>
+<body>
+<div id="hud">
+ <div id="top"><div id="brand" class="panel"><h1>FOX / 03 <span style="color:#fac193">•</span> True 3D Habitat</h1><p>Real-time articulated animal · Physical lights & shadows · GPU rendering</p></div><div id="stats" class="panel"><div class="metric"><span>FOOD <b id="foodtxt">78</b></span><div class="track"><i id="foodbar"></i></div></div><div class="metric"><span>JOY <b id="joytxt">84</b></span><div class="track"><i id="joybar"></i></div></div><div class="metric"><span>ENERGY <b id="energytxt">87</b></span><div class="track"><i id="energybar"></i></div></div><div class="metric"><span>BOND <b id="bondtxt">L1</b></span><div class="track"><i style="background:#dab0ec;width:33%" id="bondbar"></i></div></div></div></div>
+ <button id="pause">Ⅱ</button>
+ <div id="note"></div>
+ <div id="status">INITIALIZING HARDWARE RENDERER…</div>
+ <div id="hint">Left-drag: orbit camera · Wheel: zoom<br>Click floor: walk there · Click fox: pet<br>1–6: activities · Space: pause</div>
+ <div id="bottom" class="panel">
+  <button data-task="bed"><span>☾</span>Sleep</button>
+  <button data-task="ball"><span>◉</span>Fetch</button>
+  <button data-task="food"><span>♨</span>Feed</button>
+  <button data-task="desk"><span>⌘</span>Work</button>
+  <button data-task="window"><span>◐</span>Window</button>
+  <button data-task="tower"><span>♜</span>Climb</button>
+  <button id="wander"><span>⌁</span>Wander</button>
+  <button id="rig"><span>⌁</span>Rigged Fox</button>
+  <button id="fur"><span>≋</span>Fur detail</button>
+ </div>
+ <div id="debug" class="panel"></div>
+</div>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js"}}</script>
+<script type="module" src="./scene.js"></script>
+</body></html>

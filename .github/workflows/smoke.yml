@@ -32,6 +32,11 @@ jobs:
           node --check grounded-gait-v13.js
           node --check navigation-v13.js
           node check-v13.mjs
+          node check-facing-v16.mjs
+          node --check fox-facing-v16.js
+          node --check living-motion-v14.js
+          test -s docs/v16-fox-4-directions.jpg
+          test -s docs/v16-fox-full-direction-demo.mp4
           test -s docs/v13-grounded-fox-interactions.mp4
           test -s docs/v13-grounded-fox-showcase.jpg
           node rtx4090/check-gallery.mjs

@@ -1,5 +1,6 @@
 import * as THREE from "./node_modules/three/build/three.module.js";
 import { createPoseKit } from "./fox-rig-v15.js";
+import {gazeOffset} from "./fox-facing-v16.js";
 
 // Behaviour + posture layer for the realistic fox.
 //
@@ -94,6 +95,14 @@ export function createLivingFoxMotion({ fox, rigged, foxRoot }) {
       lookTargetYaw = (hash(e) - .5) * 1.15;
       lookTargetPitch = (hash(e + 9) - .5) * .4;
       nextLook = t + 1.9 + hash(e + 3) * 3.4;
+    }
+    if(fox.attentionPoint&&performance.now()<fox.attentionUntil){
+      const point=fox.attentionPoint;
+      const dist=Math.hypot(point.x-fox.pos.x,point.z-fox.pos.z);
+      if(dist>.06){
+        lookTargetYaw=clamp(gazeOffset(fox.orientation,fox.pos,point),-.94,.94);
+        lookTargetPitch=clamp(Math.atan2(.85-point.y,dist)*.38,-.35,.35);
+      }
     }
     const gaze = clamp(rest * 1 + sitW * .55 + eatW * .12 + playW * .25 + d * .22, 0, 1);
     lookYaw = damp(lookYaw, lookTargetYaw * gaze, 3.2, dt);

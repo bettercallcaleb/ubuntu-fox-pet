@@ -1,3 +1,15 @@
+# FOX / 16 — Full-Direction Looking and Turning
+
+## v16 — Free 360-degree camera orbit + fox look control
+
+![Four actual runtime directions (RTX 3060)](docs/v16-fox-4-directions.jpg)
+
+[**Watch real-time four-direction turning**](docs/v16-fox-full-direction-demo.mp4)
+
+The restricted camera orbit was limited to approximately 142 degrees. The fix now allows **full 360-degree mouse orbit**, and adds explicit body/head tracking: **Face Me** toggle or **L** key makes the fox continuously turn toward the camera; **right-click** or **Shift+left-click** on the floor tells the fox to turn toward any world point without walking. The fox also glances toward the cursor while idle. Ordinary left-click walking, fur, posture animation, IK and existing tasks are preserved.
+
+`fox-facing-v16.js` centralizes shortest-arc yaw calculations and the world-space look direction. `check-facing-v16.mjs` checks four compass directions, wrap at +/-180 degrees and reversible 720-degree camera orbit. Live Chrome DevTools tests also verified body/nose alignment, Face Me tracking and right-mouse interaction at roughly 60 FPS on RTX 3060.
+
 # FOX / 15 — Fox that actually moves
 
 ## v15 — Re-fitted skeleton, real quadruped gait, real postures

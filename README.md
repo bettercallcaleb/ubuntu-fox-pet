@@ -1,6 +1,20 @@
 # Ubuntu Fox Pet 🦊
 
-## v18 — The actual anatomical-forward fix (body, legs and head)
+## v19 — Independent head motion without a permanently twisted neck
+
+The earlier v18 solution **kept both head and neck joints rotated by 0.4 radians at rest**. That made the fox appear more frontal in a still image but left its actual head/neck in a strained pose. v19 corrects the original head surface **once at GLB load** instead: the vertex positions and normals of 84,520 affected head/ear/neck vertices are softly adjusted, then the original 29-bone skeleton and 36K skinned fur strands animate on the corrected surface. **No new or modified GLB binary is checked into git.** The torso and tail mesh are untouched.
+
+![Actual same-camera RTX 3060 front view before/after](real3d/docs/v19-front-comparison.jpg)
+
+![Actual same-camera RTX 3060 overhead view before/after](real3d/docs/v19-overhead-comparison.jpg)
+
+[**Watch the fox look independently left, right, left and straight ahead (9.4 seconds)**](real3d/docs/v19-independent-head-gaze.mp4) · [**Watch it walk four directions (12.5 seconds)**](real3d/docs/v19-four-direction-walk.mp4)
+
+**Startup behavior changed:** the fox initially faces the viewer but **Face Me is not continuously locked on**. The user can orbit freely, click the floor to walk, right-click to turn in place, and enable **Face Me** / **L** only when desired. During real RTX 3060 browser testing the independent head gaze moved from **+0.419 to -0.419 radians** without rotating the body, 4-direction walking and IK remained functional, and no JavaScript exceptions occurred. Tests verify actual mesh geometry was adjusted while leaving 154,016 body/tail vertices unchanged and normals valid. This is an improvement to the existing source asset, not a complete replacement for a professionally retopologized animation rig.
+
+![Actual v19 cold start on Ubuntu RTX 3060](real3d/docs/v19-cold-start.jpg)
+
+## v18 — Anatomical-forward fix (old head-rest approach superseded by v19)
 
 **The previous 180-degree model mount from v16.1 was wrong.** We had verified numeric body yaw and a frontal-looking screenshot but not the realistic fox's *anatomical forward axis* against its movement vector. The actual GLB head-to-hips axis is **local +Z**, while the navigation/gait system uses **world +X**. Mounting the model at 180 degrees made those two axes nearly perpendicular and forced the fox to walk sideways. v18 measures that geometry and applies the correct **+90-degree model mount**, consistently for forward walking, turning, 4-leg IK and camera-facing behavior.
 
@@ -36,7 +50,7 @@ RTX 3060 Chrome/WebGL2: the same rapid turn before and after yielded maximum toe
 
 [**Watch the corrected fox maintain eye contact as the camera moves**](real3d/docs/v16-face-me-model-correction.mp4)
 
-The app now **starts with Face Me active**, so the fox faces the viewer as soon as it loads. Camera rotation keeps it facing the viewer; clicking **Wander** or selecting a destination resumes autonomous movement. The enhanced/classic fallback rigs retain their original 90° mounting angle. A fresh Chrome session verified 0 JavaScript exceptions, correct body yaw and correct model mount in three camera positions, plus a separate navigation/IK walking test.
+**Historical v16.1 behavior, superseded by v19:** The fox previously started with Face Me active, so it always faced the camera. Camera rotation keeps it facing the viewer; clicking **Wander** or selecting a destination resumes autonomous movement. The enhanced/classic fallback rigs retain their original 90° mounting angle. A fresh Chrome session verified 0 JavaScript exceptions, correct body yaw and correct model mount in three camera positions, plus a separate navigation/IK walking test.
 
 ## v16 — Fox can look and turn in every direction
 

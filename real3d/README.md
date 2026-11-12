@@ -1,4 +1,20 @@
-# FOX / 18 — Anatomical forward alignment and neutral head correction
+# FOX / 19 — Corrected neutral mesh with free head and neck
+
+**Why:** The v18 fixed global model direction but introduced a permanent +0.4-radian yaw at *each* of the head and neck bones as a cosmetic compensation for the original fox mesh's sideways neutral face. The resulting head looked stuck or crooked during walking and when seen overhead. The 29-bone gait and head-to-hips vector alone did not test the **visible muzzle**.
+
+**How:** The new `neutral-head-v19.js` runs immediately after GLB load and **before microfur generation**. It corrects head/ear/neck vertices with skinned-weight-and-position falloff, rotates corresponding normals, and recomputes the mesh bounds. Original joint rest quaternions stay neutral, so `living-motion-v14.js` can yaw the head relative to the body instead of around an already twisted rest pose. The original GLB, UVs, materials, skeleton, animation clips and torso/tail geometry remain unchanged.
+
+![Actual frontal v18-v19 comparison](docs/v19-front-comparison.jpg)
+
+![Actual overhead comparison](docs/v19-overhead-comparison.jpg)
+
+[**Independent head gaze (9.4s live GPU recording)**](docs/v19-independent-head-gaze.mp4) · [**Four-direction walking (12.5s live GPU recording)**](docs/v19-four-direction-walk.mp4)
+
+**Behavior:** On startup the fox faces the initial camera once but the continuous Face Me mode is **off**. Mouse look, point-to-turn and walking remain available; Face Me is a user-activated toggle.
+
+**Verification:** The `check-head-v19.mjs` test loads real GLB attributes, runs the actual neutral mesh correction and verifies 84,520 affected vertices, 154,016 unchanged body/tail vertices, valid normals, untouched UVs and bounds, and microfur created *after* neutralization. Live Ubuntu RTX 3060: head turns both directions (yaw +0.419/-0.419 radians) while body yaw stays fixed; cold start and the four-way walk tested at about 60 FPS with zero uncaught JavaScript exceptions. Original GLB asymmetry and limited 4-leg kinematics remain, and a professional model/rig could still improve the animal further.
+
+# FOX / 18 — Anatomical forward alignment and historical bone-rest correction (superseded by v19)
 
 The GLB realistic fox is modeled with **local +Z forward** (measured from the hips-to-head bind-pose joint positions); the Three.js animal movement and IK math assume **world +X forward**. An incorrect 180-degree holder rotation introduced in v16.1 made these axes perpendicular, leaving the fox walking sideways even though navigation tests and the camera facing numerically passed. In v18, the holder uses a single `REALISTIC_MOUNT_YAW = Math.PI / 2` constant and correct 0.4-radian head/neck local-Y neutral pose adjustments. The model's skinned head and body can now face and walk in the same direction rather than twisting the torso to compensate.
 
@@ -24,7 +40,7 @@ When `Face Me` rotates a 29-bone skinned fox in place, the old world-planted foo
 
 ![Same angle, two different mount offsets, directly captured from Ubuntu Chrome](docs/v16-fox-visual-orientation-fix.jpg)
 
-**Superseded:** This section originally claimed the realistic mesh required a 180° mount. That was incorrect: the anatomical GLB forward axis is local +Z and requires **90°** to match world +X. v18 restores 90° for all variants and uses independent head/neck neutral corrections. The remaining v16.1 null-attention-vector fix is valid. The `Face Me` frame loop also tried to call `.set()` on null `fox.attentionPoint`, throwing repeatedly before updating orientation. Both defects are corrected. The game starts with Face Me on; users can deliberately switch to autonomous Wander.
+**Superseded:** This section originally claimed the realistic mesh required a 180° mount. That was incorrect: the anatomical GLB forward axis is local +Z and requires **90°** to match world +X. v18 restores 90° for all variants and uses independent head/neck neutral corrections. The remaining v16.1 null-attention-vector fix is valid. The `Face Me` frame loop also tried to call `.set()` on null `fox.attentionPoint`, throwing repeatedly before updating orientation. Both defects were addressed at the time; **v19 now defaults Face Me to off**, with the initial heading aligned to the camera but free thereafter.
 
 ![Live corrected front-facing model](docs/v16-fox-face-me-confirmed.png)
 

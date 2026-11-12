@@ -35,6 +35,14 @@ jobs:
           node check-facing-v16.mjs
           node check-turn-v17.mjs
           node check-fox-axis-v18.mjs
+          node check-head-v19.mjs
+          node --check neutral-head-v19.js
+          test -s docs/v19-front-comparison.jpg
+          test -s docs/v19-overhead-comparison.jpg
+          test -s docs/v19-threequarter-comparison.jpg
+          test -s docs/v19-cold-start.jpg
+          test -s docs/v19-independent-head-gaze.mp4
+          test -s docs/v19-four-direction-walk.mp4
           node --check fox-axis-v18.js
           test -s docs/v18-head-before-after.jpg
           test -s docs/v18-four-direction-walk.jpg

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import {REALISTIC_MOUNT_YAW,REALISTIC_NEUTRAL_HEAD_YAW} from "./fox-axis-v18.js";
+import {REALISTIC_MOUNT_YAW} from "./fox-axis-v18.js";
 import {FOUR_WAY} from "./fox-facing-v16.js";
 const raw=fs.readFileSync(new URL("./assets/Fox_Realistic_Rigged.glb",import.meta.url));
 const length=raw.readUInt32LE(12),gltf=JSON.parse(raw.subarray(20,20+length).toString());
@@ -29,9 +29,7 @@ for(const {name,heading} of FOUR_WAY){
 }
 assert.ok(bones.toeL0[2]>bones.toeL1[2]&&bones.toeR0[2]>bones.toeR1[2],"Both front paws must be ahead of both rear paws");
 assert.ok(bones.toeL0[0]>bones.toeR0[0],"Glb left and right leg labels reversed");
-assert.ok(REALISTIC_NEUTRAL_HEAD_YAW.neck>=.25&&REALISTIC_NEUTRAL_HEAD_YAW.neck<=.5);
-assert.ok(REALISTIC_NEUTRAL_HEAD_YAW.head>=.25&&REALISTIC_NEUTRAL_HEAD_YAW.head<=.5);
 const code=fs.readFileSync(new URL("./scene.js",import.meta.url),"utf8");
 assert.ok(code.includes("rigged.holder.rotation.y=REALISTIC_MOUNT_YAW"),"Runtime must use measured anatomical forward mount");
-assert.ok(code.includes("Object.entries(REALISTIC_NEUTRAL_HEAD_YAW)"),"Runtime neutral head correction is disconnected");
-console.log(JSON.stringify({status:"PASS",glbModelForward:"+Z",runtimeForward:"+X",axisMountDegrees:90,headNeutralDegrees:Math.round((REALISTIC_NEUTRAL_HEAD_YAW.head+REALISTIC_NEUTRAL_HEAD_YAW.neck)*180/Math.PI),directions:results}));
+assert.ok(code.includes("neutralizeRealisticFoxHead(realisticSkin)"),"Runtime must bake the neutral head mesh before constructing fur");
+console.log(JSON.stringify({status:"PASS",glbModelForward:"+Z",runtimeForward:"+X",axisMountDegrees:90,headNeutralMode:"mesh-baked",directions:results}));

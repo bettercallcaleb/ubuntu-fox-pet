@@ -7,6 +7,7 @@ import {route as findRoute,blocked as pathBlocked,groundHeight,NAV_INFO} from ".
 import {headingTo,turnToward,gazeOffset,wrapAngle,wrappedOrbit} from "./fox-facing-v16.js";
 import {REALISTIC_MOUNT_YAW} from "./fox-axis-v18.js";
 import {neutralizeRealisticFoxHead} from "./neutral-head-v19.js";
+import {stabilizeHeadSkinning} from "./head-weights-v20.js";
 
 const TAU=Math.PI*2;
 const scene=new THREE.Scene();
@@ -541,7 +542,9 @@ function loadVariant(name){
    }
   });
   if(name==="realistic"&&realisticSkin){
+   const bindPosition=realisticSkin.geometry.getAttribute("position");
    rigged.headNeutral=neutralizeRealisticFoxHead(realisticSkin);
+   rigged.headWeights=stabilizeHeadSkinning(realisticSkin,bindPosition);
    rigged.fur=buildMicroFur(realisticSkin,36000,4137);
    rigged.furEnabled=Boolean(rigged.fur);
   }

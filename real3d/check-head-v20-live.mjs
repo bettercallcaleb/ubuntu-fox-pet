@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict';
+const port=process.env.FOX_CDP_PORT||9259;
+const tabs=await(await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+const page=tabs.find(p=>p.type==='page'&&p.url.includes(process.env.FOX_PAGE_PORT||'8765'));
+assert.ok(page,'Fox browser tab not found');
+const ws=new WebSocket(page.webSocketDebuggerUrl);
+await new Promise(r=>ws.addEventListener('open',r,{once:true}));
+let id=0;const pending=new Map(),exceptions=[];
+ws.onmessage=e=>{const data=JSON.parse(e.data);if(data.method==='Runtime.exceptionThrown')exceptions.push(data.params.exceptionDetails.text);const p=pending.get(data.id);if(p){pending.delete(data.id);data.error?p.reject(data.error):p.resolve(data.result)}};
+const call=(method,params={})=>new Promise((resolve,reject)=>{const n=++id;pending.set(n,{resolve,reject});ws.send(JSON.stringify({id:n,method,params}))});
+const js=async expression=>{const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+await call('Runtime.enable');
+await call('Page.reload',{ignoreCache:true});
+await sleep(1300);
+let ready=false;
+for(let n=0;n<40;n++){ready=await js("window.__fox3d?.rigged.ready&&window.__fox3d.rigged.variant==='realistic'&&Boolean(window.__fox3d.rigged.headWeights)");if(ready)break;await sleep(450)}
+assert.ok(ready,'Fox v20 did not load');
+const initial=await js(`(()=>{const f=window.__fox3d;f.state.paused=false;f.state.wander=false;f.setFaceCamera(false);f.fox.target=null;f.fox.route=[];f.fox.action='idle';f.fox.faceAngleTarget=null;f.fox.orientation=0;f.fox.root.rotation.y=0;f.fox.attentionUntil=0;return {gpu:f.gpuName,weights:f.rigged.headWeights,bones:f.rigged.boneCount}})()`);
+async function gaze(sign){
+ await js(`(()=>{const f=window.__fox3d;f.fox.attentionPoint.set(f.fox.pos.x+1,.85,f.fox.pos.z+${sign}*2.8);f.fox.attentionUntil=performance.now()+4500;return true})()`);
+ await sleep(1350);
+ return await js(`(()=>{const f=window.__fox3d;const b=f.rigged.bones.get('head'),rest=f.rigged.boneRest.get('head'),q=rest.clone().invert().multiply(b.quaternion);return {q:q.toArray(),root:f.fox.orientation,walking:f.fox.isWalking,fps:Number(document.querySelector('#fr')?.textContent)||0}})()`);
+}
+const left=await gaze(-1),right=await gaze(1);
+const dot=left.q.reduce((sum,v,i)=>sum+v*right.q[i],0);
+const headSeparation=2*Math.acos(Math.min(1,Math.abs(dot)));
+assert.ok(headSeparation>.18,'Head did not turn in both gaze directions');
+assert.ok(Math.abs(left.root-right.root)<.02,'Gaze should not rotate entire torso');
+const turn=await js(`(()=>{const f=window.__fox3d;f.fox.attentionUntil=0;const V=f.fox.pos.constructor;return f.lookAtPoint(f.fox.pos.clone().add(new V(0,0,-2.2)))})()`);
+assert.ok(turn,'Point-to-turn interaction did not respond');
+await sleep(1500);
+const turned=await js("({orientation:window.__fox3d.fox.orientation,foot:window.__fox3dGait.diagnostics()})");
+assert.ok(turned.orientation>.45,'Body did not turn toward the selected point');
+await js(`(()=>{const f=window.__fox3d;const V=f.fox.pos.constructor;f.fox.attentionUntil=0;return f.walkTo(f.fox.pos.clone().add(new V(.7,0,0)),'food')})()`);
+const before=await js("window.__fox3d.fox.pos.toArray()");
+await sleep(1350);
+const after=await js("window.__fox3d.fox.pos.toArray()");
+const travel=Math.hypot(after[0]-before[0],after[2]-before[2]);
+assert.ok(travel>.08,'Walking did not move the fox');
+assert.deepEqual(exceptions,[],'JavaScript exceptions occurred');
+ws.close();
+console.log(JSON.stringify({status:'PASS',initial,left,right,headSeparationRadians:headSeparation,turnOrientation:turned.orientation,walkDistance:travel,exceptions:exceptions.length}));

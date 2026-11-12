@@ -588,13 +588,17 @@ $("variant").addEventListener("click",()=>loadVariant(rigged.variant==="realisti
 $("neural").addEventListener("click",()=>{window.location.href="./neural/";});
 $("cinema").addEventListener("click",()=>{window.location.href="./rtx4090/";});
 
+const GAIT_STRIDE=.5; // distance travelled per gait cycle; keeps stance feet from sliding (see grounded-gait-v13.js)
 function updateFox(dt,t){
  const pace=rigged.variant==="realistic"?0.74:rigged.variant==="enhanced"?0.75:1.16;
+ const beforeX=fox.pos.x,beforeZ=fox.pos.z,beforeO=fox.orientation;
+ const gate=fox.moveGate??1; // below ~0.55 the fox is still getting up from lying/sitting
  if(fox.target){
   const diff=fox.target.clone().sub(fox.pos);diff.y=0;
   const distance=diff.length();
-  fox.isWalking=distance>.07;
+  fox.isWalking=distance>.07&&gate>.55;
   if(distance>.07){
+   if(gate>.55){
    const direction=diff.multiplyScalar(1/distance);
    const angle=Math.atan2(-direction.z,direction.x);
    let delta=Math.atan2(Math.sin(angle-fox.orientation),Math.cos(angle-fox.orientation));
@@ -605,6 +609,7 @@ function updateFox(dt,t){
    fox.pos.addScaledVector(fwd,step);
    fox.pos.x=clamp(fox.pos.x,-4.53,4.47);fox.pos.z=clamp(fox.pos.z,-3.20,3.06);
    fox.orientation=Math.atan2(Math.sin(fox.orientation),Math.cos(fox.orientation));
+   }
   }else{
    if(fox.route.length){
     fox.target=fox.route.shift();
@@ -615,7 +620,7 @@ function updateFox(dt,t){
    }
   }
  }else fox.isWalking=false;
- if(!fox.isWalking&&fox.faceAngleTarget!==null){
+ if(!fox.isWalking&&fox.faceAngleTarget!==null&&gate>.55){
   const delta=Math.atan2(Math.sin(fox.faceAngleTarget-fox.orientation),Math.cos(fox.faceAngleTarget-fox.orientation));
   fox.orientation+=clamp(delta,-dt*2.8,dt*2.8);
   if(Math.abs(delta)<.025)fox.faceAngleTarget=null;
@@ -627,7 +632,13 @@ function updateFox(dt,t){
  }
  fox.root.position.copy(fox.pos);
  fox.root.rotation.y=fox.orientation;
- if(fox.isWalking)fox.phase+=dt*1.85;
+ {
+  const moved=Math.hypot(fox.pos.x-beforeX,fox.pos.z-beforeZ);
+  const turned=Math.abs(Math.atan2(Math.sin(fox.orientation-beforeO),Math.cos(fox.orientation-beforeO)));
+  fox.speed=mix(fox.speed||0,moved/Math.max(dt,1e-3),.35);
+  fox.stepping=!fox.isWalking&&turned/Math.max(dt,1e-3)>.35;   // turning on the spot: step the feet
+  if(fox.isWalking||fox.stepping)fox.phase+=(moved+turned*.2)/GAIT_STRIDE;
+ }
  if(rigged.enabled)groundedGait.update(dt,t);
  const cycle=fox.phase*TAU;
  const bob=fox.isWalking?.035*Math.sin(cycle*2):.012*Math.sin(t*2.2);
@@ -653,7 +664,7 @@ function updateFox(dt,t){
  }else if(fox.action==="play"&&!fox.target){
   head.rotation.z=mix(head.rotation.z,.18*Math.sin(t*7),.03);
  }
- if(fox.action==="jump"&&!fox.target){
+ if(fox.action==="jump"&&!fox.target&&(rigged.variant!=="realistic"||!rigged.enabled)){
   const local=t-fox.actionTime,progress=local/1.1;
   if(progress<1){fox.root.position.y+=Math.sin(progress*Math.PI)*.68;torso.rotation.z-=Math.sin(progress*Math.PI)*.12;}
   else fox.action="idle";
@@ -710,7 +721,7 @@ function arrive(){
  const name=state.task;
  state.task=null;
  document.querySelectorAll("[data-task]").forEach(b=>b.classList.remove("active"));
- fox.action=name||"idle";fox.actionTime=performance.now()/1000;
+ fox.action=name==="bed"?"sleep":(name||"idle");fox.actionTime=performance.now()/1000;
  const lookAt={bed:[-3.25,1.4],food:[2.3,1.72],desk:[2.45,-2.58],window:[-1.65,-4.2],tower:[4.03,.56]};
  if(lookAt[name]){
   const [tx,tz]=lookAt[name];
@@ -867,8 +878,8 @@ const gpuName=debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParamet
 const gpuVendor=debug?gl.getParameter(debug.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR);
 $("status").textContent="GPU: "+gpuName+" · OpenGL/WebGL 2.0 · Articulated 4-leg IK · 5,000+ fur strands";
 $("debug").innerHTML="GPU: "+gpuName+"<br>Vendor: "+gpuVendor+"<br>Renderer: THREE WebGL<br>Shadowmap: 2048²<br>Frame: <span id='fr'>--</span> FPS<br>Draw calls: <span id='dc'>--</span>";
-window.__fox3d={gpuName,gpuVendor,renderer,scene,camera,fox,state,task,updateFox,walkTo};
-window.__fox3dGait={diagnostics:()=>groundedGait.diagnostics(),groundHeight};
+window.__fox3d={gpuName,gpuVendor,renderer,scene,camera,fox,state,task,updateFox,walkTo,orbit,rigged,updateCamera};
+window.__fox3dGait={diagnostics:()=>groundedGait.diagnostics(),snap:()=>groundedGait.snap(),groundHeight};
 window.__fox3dNavigation={route:findRoute,blocked:pathBlocked,info:NAV_INFO};
 window.__fox3dReady=true;
 

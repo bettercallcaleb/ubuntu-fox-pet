@@ -104,6 +104,10 @@ export function createLivingFoxMotion({ fox, rigged, foxRoot }) {
         lookTargetPitch=clamp(Math.atan2(.85-point.y,dist)*.38,-.35,.35);
       }
     }
+    // During an in-place turn the torso follows the target; do not twist the neck
+    // to its full idle limit while the planted legs are repositioning.
+    lookTargetYaw = clamp(lookTargetYaw, -.42, .42);
+    if (fox.stepping && !fox.isWalking) lookTargetYaw *= .2;
     const gaze = clamp(rest * 1 + sitW * .55 + eatW * .12 + playW * .25 + d * .22, 0, 1);
     lookYaw = damp(lookYaw, lookTargetYaw * gaze, 3.2, dt);
     lookPitch = damp(lookPitch, lookTargetPitch * gaze, 2.6, dt);

@@ -5,6 +5,7 @@ import {installPremiumRoom} from "./room-v8.js";
 import {createGroundedGait} from "./grounded-gait-v13.js";
 import {route as findRoute,blocked as pathBlocked,groundHeight,NAV_INFO} from "./navigation-v13.js";
 import {headingTo,turnToward,gazeOffset,wrapAngle,wrappedOrbit} from "./fox-facing-v16.js";
+import {REALISTIC_MOUNT_YAW,REALISTIC_NEUTRAL_HEAD_YAW} from "./fox-axis-v18.js";
 
 const TAU=Math.PI*2;
 const scene=new THREE.Scene();
@@ -445,7 +446,7 @@ const variants={
  enhanced:{asset:"./assets/Fox_Enhanced.glb",idle:"Look around",walk:"Walk",tail:"Tail wag",jump:"Walk",label:"Enhanced 29-bone fox",height:1.43},
  classic:{asset:"./assets/Fox.glb",idle:"Survey",walk:"Walk",tail:"Survey",jump:"Run",label:"Classic 24-bone fox",height:1.21}
 };
-rigged.holder.rotation.y=Math.PI/2;
+rigged.holder.rotation.y=REALISTIC_MOUNT_YAW;
 function setRiggedEnabled(value){
  rigged.enabled=Boolean(value && rigged.ready);
  rigged.holder.visible=rigged.enabled;
@@ -508,7 +509,7 @@ function loadVariant(name){
   bound=new THREE.Box3().setFromObject(model);
   const center=bound.getCenter(new THREE.Vector3());
   model.position.set(-center.x,-bound.min.y,-center.z);
-  rigged.holder.rotation.y=name==="realistic"?Math.PI:Math.PI/2;
+  rigged.holder.rotation.y=REALISTIC_MOUNT_YAW;
   rigged.holder.add(model);
   model.traverse(child=>{
    if(child.isMesh||child.isSkinnedMesh){
@@ -539,6 +540,16 @@ function loadVariant(name){
    }
   });
   if(name==="realistic"&&realisticSkin){
+   const yawAxis=new THREE.Vector3(0,1,0);
+   for(const [boneName,neutralYaw] of Object.entries(REALISTIC_NEUTRAL_HEAD_YAW)){
+    const bone=rigged.bones.get(boneName);
+    const rest=rigged.boneRest.get(boneName);
+    if(bone&&rest){
+     const corrected=rest.clone().multiply(new THREE.Quaternion().setFromAxisAngle(yawAxis,neutralYaw));
+     bone.quaternion.copy(corrected);
+     rigged.boneRest.set(boneName,corrected);
+    }
+   }
    rigged.fur=buildMicroFur(realisticSkin,36000,4137);
    rigged.furEnabled=Boolean(rigged.fur);
   }

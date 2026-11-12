@@ -1,8 +1,34 @@
 # Ubuntu Fox Pet 🦊
 
+## v18 — The actual anatomical-forward fix (body, legs and head)
+
+**The previous 180-degree model mount from v16.1 was wrong.** We had verified numeric body yaw and a frontal-looking screenshot but not the realistic fox's *anatomical forward axis* against its movement vector. The actual GLB head-to-hips axis is **local +Z**, while the navigation/gait system uses **world +X**. Mounting the model at 180 degrees made those two axes nearly perpendicular and forced the fox to walk sideways. v18 measures that geometry and applies the correct **+90-degree model mount**, consistently for forward walking, turning, 4-leg IK and camera-facing behavior.
+
+The original model also has a sideways-looking **neutral skull/neck pose**. Instead of rotating the entire animal to hide it, v18 gives the neck and head their own **0.4-radian local-Y rest corrections** each, then builds all subsequent poses from the corrected rest. All existing 29 joints, 36K skinned fur strands and pathfinding remain intact.
+
+![Actual same-camera head pose before and after neutral correction](real3d/docs/v18-head-before-after.jpg)
+
+![Four actual browser walking directions after model/body/gait alignment](real3d/docs/v18-four-direction-walk.jpg)
+
+[**Watch the actual corrected fox walk east, north, west and south (12.4 seconds, RTX 3060)**](real3d/docs/v18-correct-anatomical-walk.mp4)
+
+Cold Chrome/RTX 3060 runs: measured forward alignment **at least 0.9993** for all four directions (previous 180-degree mount: **0.047**), no console exceptions, **59–60 FPS** in the recorded four-direction run. New regression test reads the GLB inverse bind matrices and verifies real skeleton forward geometry against runtime heading for four cardinal directions. This corrects, rather than repeats, the v16.1 camera-only workaround.
+
+## v17 — No more twisted fox when turning in place
+
+**Fixes the next user-reported visual bug:** rapidly rotating a fox with the mouse caused the old planted world-space paw anchors to cross under its spinning torso. Two-bone IK tried to reach those stale anchors, visibly folding its legs and stretching the body/neck. **This is an animation/kinematics bug, not a model rotation issue.**
+
+![Actual 3060 turn frame before and after: crossed paws versus stable quadruped](real3d/docs/v17-turning-before-after.jpg)
+
+[**Watch 12.6 seconds of real corrected 360-degree camera-follow turning**](real3d/docs/v17-turn-stable-real-time.mp4)
+
+The turn-in-place branch now moves each stance contact toward its body-relative anatomical home each frame, with a small alternating paw lift. Walking retains its original planted-feet gait and furniture navigation. Head/neck gaze is limited while the torso turns, avoiding excessive neck twisting. This is a **terrain-aware contact approximation**, not a full dynamics simulation.
+
+RTX 3060 Chrome/WebGL2: the same rapid turn before and after yielded maximum toe-target error **0.173 → less than 0.000001 scene units** and peak thigh rotation away from rest **0.912 → 0.408 rad**. A second 96-sample stress test covering six camera turns found maximum toe-target error **0.0051**, minimum **56 FPS**, zero uncaught exceptions and correct final heading after each turn. Static unit tests simulate both directions of full 360-degree turning at 15, 30, 60 and 120 Hz. Independent v15 Rapier development was left untouched.
+
 ## v16.1 — Fox actually faces the viewer (visual orientation hotfix)
 
-**Fixed the real user-reported problem, not just the camera angle.** The refitted realistic fox needed a **180° model mount**, but the runtime kept mounting it at 90°. That mismatch made it look permanently sideways/backward even when the numeric body yaw was correct. The **Face Me** loop also dereferenced a null `attentionPoint`, stopping the animation frame after clicking the button.
+**Historical note (superseded by v18):** This hotfix incorrectly set the realistic mount to **180°** based on appearance from one camera. That was not the fox's anatomical forward direction and caused sideways walking. v18 restores the correct **90°** mount and separately fixes the head's neutral pose. The null `attentionPoint` fix from v16.1 remains valid.
 
 ![Before: wrong profile, after: correctly visible fox face, same camera and environment](real3d/docs/v16-fox-visual-orientation-fix.jpg)
 

@@ -2,6 +2,7 @@ import * as THREE from "./node_modules/three/build/three.module.js";
 import {groundHeight} from "./navigation-v13.js";
 import {createLivingFoxMotion} from "./living-motion-v14.js";
 import {aimBone, solveTwoBone, createPoseKit} from "./fox-rig-v15.js";
+import {updateTurnContact} from "./turn-contact-v17.js";
 
 // Four-legged gait for the realistic fox.
 //  * lateral-sequence walk (LH, LF, RH, RF), stance feet stay planted in world space
@@ -161,8 +162,9 @@ export function createGroundedGait({scene, fox, foxRoot, rigged}) {
 
   function update(dt, t) {
     if (rigged.variant !== "realistic" || !rigged.enabled || !rigged.ready || !initialize()) return;
+    const turningInPlace = Boolean(fox.stepping && !fox.isWalking);
     const moving = Boolean(fox.isWalking || fox.stepping);
-    amplitude = damp(amplitude, moving ? 1 : 0, 5.7, dt);
+    amplitude = damp(amplitude, fox.isWalking ? 1 : 0, 5.7, dt);
     const phaseDelta = (fox.phase || 0) - lastPhase;
     lastPhase = fox.phase || 0;
     cadence = damp(cadence, clamp(phaseDelta / Math.max(dt, 1e-3), .9, 3.5), 8, dt);
@@ -194,7 +196,8 @@ export function createGroundedGait({scene, fox, foxRoot, rigged}) {
       const cycle = Math.floor((fox.phase || 0) + leg.phaseOffset);
       const distance = Math.hypot(home.x - leg.plant.x, home.z - leg.plant.z);
 
-      if (!leg.swing && postureWeight < .05) {
+      const turningContact = turningInPlace && postureWeight < .05;
+      if (!turningContact && !leg.swing && postureWeight < .05) {
         const due = moving && p >= DUTY && leg.lastCycle !== cycle;
         const overStretched = moving && distance > STRIDE * .62;
         const settle = !moving && distance > .09 && swinging < 1 && t - lastSettle > .14;
@@ -209,7 +212,10 @@ export function createGroundedGait({scene, fox, foxRoot, rigged}) {
           swinging++;
         }
       }
-      if (leg.swing) {
+      if (turningContact) {
+        updateTurnContact(leg, home, dt, p, groundHeight, FLOOR_OFFSET);
+        plantedCount++;
+      } else if (leg.swing) {
         leg.alpha = clamp((t - leg.swingAt) / leg.swingDuration, 0, 1);
         const k = ease(leg.alpha);
         leg.target.lerpVectors(leg.from, leg.to, k);

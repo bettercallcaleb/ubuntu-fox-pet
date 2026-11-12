@@ -33,6 +33,16 @@ jobs:
           node --check navigation-v13.js
           node check-v13.mjs
           node check-facing-v16.mjs
+          node check-turn-v17.mjs
+          node check-fox-axis-v18.mjs
+          node --check fox-axis-v18.js
+          test -s docs/v18-head-before-after.jpg
+          test -s docs/v18-four-direction-walk.jpg
+          test -s docs/v18-correct-anatomical-walk.mp4
+          node --check turn-contact-v17.js
+          node --check grounded-gait-v13.js
+          test -s docs/v17-turning-before-after.jpg
+          test -s docs/v17-turn-stable-real-time.mp4
           test -s docs/v16-fox-visual-orientation-fix.jpg
           test -s docs/v16-fox-face-me-confirmed.png
           test -s docs/v16-face-me-model-correction.mp4

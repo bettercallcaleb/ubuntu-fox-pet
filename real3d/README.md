@@ -1,3 +1,15 @@
+# FOX / 18 — Anatomical forward alignment and neutral head correction
+
+The GLB realistic fox is modeled with **local +Z forward** (measured from the hips-to-head bind-pose joint positions); the Three.js animal movement and IK math assume **world +X forward**. An incorrect 180-degree holder rotation introduced in v16.1 made these axes perpendicular, leaving the fox walking sideways even though navigation tests and the camera facing numerically passed. In v18, the holder uses a single `REALISTIC_MOUNT_YAW = Math.PI / 2` constant and correct 0.4-radian head/neck local-Y neutral pose adjustments. The model's skinned head and body can now face and walk in the same direction rather than twisting the torso to compensate.
+
+![Actual browser head pose before and after corrective neutral rig](docs/v18-head-before-after.jpg)
+
+![Actual browser walk screenshots for east, north, west and south](docs/v18-four-direction-walk.jpg)
+
+[**12.4-second live RTX 3060 four-direction walking video**](docs/v18-correct-anatomical-walk.mp4)
+
+`check-fox-axis-v18.mjs` reads **the actual GLB inverse bind matrices** (not just intended math) to verify the local forward axis, foot order and transformed forward direction for all four cardinal directions. Browser captures verified the head-to-hips vector matches the movement vector (direction cosine >= 0.9993), no JS exceptions, and 59–60 FPS on RTX 3060. v17's in-place foot contact corrections remain active. Historical v16.1 screenshots and 180-degree rotation discussion are retained only to document the rejected workaround.
+
 # FOX / 17 — Stable full-body turning
 
 ![RTX 3060 real in-game before and after: paw crossover eliminated](docs/v17-turning-before-after.jpg)
@@ -12,7 +24,7 @@ When `Face Me` rotates a 29-bone skinned fox in place, the old world-planted foo
 
 ![Same angle, two different mount offsets, directly captured from Ubuntu Chrome](docs/v16-fox-visual-orientation-fix.jpg)
 
-The source mesh was re-rigged in PR #14, but `scene.js` still mounted every character at 90° about local Y. The realistic character requires **180°**, while Enhanced and Classic remain at 90°. Before the correction, `Face Me` numerically aligned the `foxRoot` yaw but the **visible fox nose was sideways**. The `Face Me` frame loop also tried to call `.set()` on null `fox.attentionPoint`, throwing repeatedly before updating orientation. Both defects are corrected. The game starts with Face Me on; users can deliberately switch to autonomous Wander.
+**Superseded:** This section originally claimed the realistic mesh required a 180° mount. That was incorrect: the anatomical GLB forward axis is local +Z and requires **90°** to match world +X. v18 restores 90° for all variants and uses independent head/neck neutral corrections. The remaining v16.1 null-attention-vector fix is valid. The `Face Me` frame loop also tried to call `.set()` on null `fox.attentionPoint`, throwing repeatedly before updating orientation. Both defects are corrected. The game starts with Face Me on; users can deliberately switch to autonomous Wander.
 
 ![Live corrected front-facing model](docs/v16-fox-face-me-confirmed.png)
 

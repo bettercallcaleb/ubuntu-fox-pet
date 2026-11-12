@@ -26,7 +26,7 @@ for(const str of ["lookAtPoint(point)","setFaceCamera(enabled)","wrappedOrbit(or
 assert.ok(motion.includes("gazeOffset(fox.orientation,fox.pos,point)"),"Head gaze not connected");
 assert.ok(index.includes('id="face"'),"Face Me control missing");
 assert.ok(source.includes("attentionPoint:new THREE.Vector3()"),"Attention point must be allocated at construction");
-assert.ok(source.includes('rigged.holder.rotation.y=name==="realistic"?Math.PI:Math.PI/2'),"Realistic fox forward-facing offset must be aligned independently of legacy rigs");
+assert.ok(source.includes("rigged.holder.rotation.y=REALISTIC_MOUNT_YAW"),"Holder orientation must share model-axis constant");
 assert.ok(source.includes("if(!fox.attentionPoint)fox.attentionPoint=new THREE.Vector3()"),"Missing runtime guard for missing point");
 assert.ok(source.includes("setFocusMode(true);\n   setFaceCamera(true);"),"Realistic fox must face camera at startup");
 assert.ok(!source.includes("clamp(orbit.azimuth-dx*.006,-1.27,1.2)"),"Camera still restricted");

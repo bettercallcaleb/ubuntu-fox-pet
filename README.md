@@ -1,5 +1,17 @@
 # Ubuntu Fox Pet 🦊
 
+## v16.1 — Fox actually faces the viewer (visual orientation hotfix)
+
+**Fixed the real user-reported problem, not just the camera angle.** The refitted realistic fox needed a **180° model mount**, but the runtime kept mounting it at 90°. That mismatch made it look permanently sideways/backward even when the numeric body yaw was correct. The **Face Me** loop also dereferenced a null `attentionPoint`, stopping the animation frame after clicking the button.
+
+![Before: wrong profile, after: correctly visible fox face, same camera and environment](real3d/docs/v16-fox-visual-orientation-fix.jpg)
+
+![Actual RTX 3060 front-facing fox after the corrected model mount](real3d/docs/v16-fox-face-me-confirmed.png)
+
+[**Watch the corrected fox maintain eye contact as the camera moves**](real3d/docs/v16-face-me-model-correction.mp4)
+
+The app now **starts with Face Me active**, so the fox faces the viewer as soon as it loads. Camera rotation keeps it facing the viewer; clicking **Wander** or selecting a destination resumes autonomous movement. The enhanced/classic fallback rigs retain their original 90° mounting angle. A fresh Chrome session verified 0 JavaScript exceptions, correct body yaw and correct model mount in three camera positions, plus a separate navigation/IK walking test.
+
 ## v16 — Fox can look and turn in every direction
 
 **Fixed the single-direction look/control bug.** The camera's former 142-degree horizontal clamp is gone; you can orbit a complete 360 degrees around the fox. Click **Face Me** (or press **L**) to have the fox turn toward the camera as you move it. **Right-click** or **Shift+left-click** the room to make the fox turn and look anywhere, while hovering the mouse produces subtle head tracking. Click the floor normally to resume walking.

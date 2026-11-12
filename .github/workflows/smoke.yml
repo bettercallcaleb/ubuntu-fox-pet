@@ -33,6 +33,9 @@ jobs:
           node --check navigation-v13.js
           node check-v13.mjs
           node check-facing-v16.mjs
+          test -s docs/v16-fox-visual-orientation-fix.jpg
+          test -s docs/v16-fox-face-me-confirmed.png
+          test -s docs/v16-face-me-model-correction.mp4
           node --check fox-facing-v16.js
           node --check living-motion-v14.js
           test -s docs/v16-fox-4-directions.jpg

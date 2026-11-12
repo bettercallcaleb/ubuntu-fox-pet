@@ -17,6 +17,8 @@ for(let tick=1;tick<=1000;tick++){
  if(tick===610){fox.action="food";}
  if(tick===720)fox.action="sleep";
  if(tick===835){fox.action="idle";fox.phase+=.025;}
+ if(tick===880)fox.action="desk";
+ if(tick===940)fox.action="jump";
  const locomotion=tick>=520&&tick<610?1:0;
  if(locomotion)fox.phase+=.026;
  motion.update(1/60,t,locomotion);
@@ -32,7 +34,7 @@ for(let tick=1;tick<=1000;tick++){
   extrema[kind]=Math.max(extrema[kind],bone.quaternion.angleTo(boneRest.get(kind==="tail"?"tail3":kind)));
  }
 }
-for(const state of ["idle","walk","play","sniff","sleep"])assert.ok(states.has(state),"missing "+state);
+for(const state of ["idle","walk","play","sniff","sleep","sit","jump"])assert.ok(states.has(state),"missing "+state);
 assert.ok(extrema.head>.12,"head still looks static");
 assert.ok(extrema.tail>.09,"tail still looks static");
 assert.ok(extrema.chest>.007,"breathing torso appears frozen");

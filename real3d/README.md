@@ -1,3 +1,25 @@
+# FOX / 15 — Fox that actually moves
+
+## v15 — Re-fitted skeleton, real quadruped gait, real postures
+
+Why the fox was stiff: the shipped `Fox_Realistic_Rigged.glb` mesh was sculpted mid-stride and slightly bent (tail and hips drifted to +x, head to -x) while the 29-bone skeleton lay on a straight x=0 line. The front-leg bones sat ~0.15 behind the real legs, the right hind leg had **zero** skinned vertices, and the neck/ears/right hind bones had none either. Any bone rotation swung geometry around the wrong pivot, so the earlier motion layer had to stay tiny and everything looked rigid or broken.
+
+![Before — original asset and motion](docs/v15-before-walk.jpg)
+
+![After — walk cycle](docs/v15-after-walk.jpg)
+
+![After — sit / lie / play-bow / sniff](docs/v15-after-poses.jpg)
+
+- **Asset refit** (`tools/refit_realistic_fox.py`, numpy only, reproducible from the original GLB): unbends the mesh along its own centreline, moves all 28 joints to anatomical positions measured on that mesh (inverse bind matrices and node translations recomputed; names, hierarchy, rotations and animations untouched) and re-skins by distance-to-bone-segment with side and height rules, so leg bones never pull the back or the opposite flank. Ears sit at the real ear positions.
+- **Pose kit** (`fox-rig-v15.js`): semantic fox-space posing (pitch/yaw/roll about the animal's own axes, independent of Blender's bone axes), analytic two-bone IK and shortest-arc aiming.
+- **Gait** (`grounded-gait-v13.js`): lateral-sequence walk (LH, LF, RH, RF; 70% duty), phase driven by the distance actually travelled so planted paws do not skate, stepping in place when turning, flat front paws and flexing hocks, paw targets for lying/sitting/play/jump relative to the rig's own home positions.
+- **Living motion** (`living-motion-v14.js`): real posture weights for sleep (lying), sit, sniff/eat, play-bow and jump with spine, neck, head, ear and tail chains; a move gate lets the fox stand up before walking away.
+- Fixed `bed` vs `sleep` action mismatch in `scene.js` so the bed task really lies down.
+
+Measured in a software-GL headless run (no real-GPU timing): walk contact error mean ≈ 0.012 / max ≈ 0.14 scene units across 5 s, 7–8 swings on each leg, all bone quaternions finite in every posture, `check-v14-live.mjs` contact error max 0.005 with no console errors.
+
+Offline checks: `node check-assets.mjs && node check-rig-fit.mjs && node check-v13.mjs && node check-v14.mjs` (`check-rig-fit.mjs` fails on the original asset: body 0.14 off the skeleton axis). Live check as in v14.
+
 # FOX / 14 — Living Fox Habitat
 
 ## v14 — Expressive secondary motion instead of a rigid fox

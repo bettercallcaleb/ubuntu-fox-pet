@@ -28,6 +28,6 @@ assert.ok(index.includes('id="face"'),"Face Me control missing");
 assert.ok(source.includes("attentionPoint:new THREE.Vector3()"),"Attention point must be allocated at construction");
 assert.ok(source.includes("rigged.holder.rotation.y=REALISTIC_MOUNT_YAW"),"Holder orientation must share model-axis constant");
 assert.ok(source.includes("if(!fox.attentionPoint)fox.attentionPoint=new THREE.Vector3()"),"Missing runtime guard for missing point");
-assert.ok(source.includes("setFocusMode(true);\n   setFaceCamera(true);"),"Realistic fox must face camera at startup");
+assert.ok(source.includes("setFocusMode(true);\n   fox.orientation=headingTo(fox.pos,camera.position);"),"Realistic fox should initially face the viewer without staying locked to the camera");
 assert.ok(!source.includes("clamp(orbit.azimuth-dx*.006,-1.27,1.2)"),"Camera still restricted");
 console.log(JSON.stringify({result:"PASS",cardinalDirections:FOUR_WAY.length,cameraRotationDegrees:720,headTracking:true,faceCameraButton:true,rightClick:true,shiftClick:true}));

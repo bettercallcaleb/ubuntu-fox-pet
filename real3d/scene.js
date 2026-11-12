@@ -5,7 +5,8 @@ import {installPremiumRoom} from "./room-v8.js";
 import {createGroundedGait} from "./grounded-gait-v13.js";
 import {route as findRoute,blocked as pathBlocked,groundHeight,NAV_INFO} from "./navigation-v13.js";
 import {headingTo,turnToward,gazeOffset,wrapAngle,wrappedOrbit} from "./fox-facing-v16.js";
-import {REALISTIC_MOUNT_YAW,REALISTIC_NEUTRAL_HEAD_YAW} from "./fox-axis-v18.js";
+import {REALISTIC_MOUNT_YAW} from "./fox-axis-v18.js";
+import {neutralizeRealisticFoxHead} from "./neutral-head-v19.js";
 
 const TAU=Math.PI*2;
 const scene=new THREE.Scene();
@@ -540,16 +541,7 @@ function loadVariant(name){
    }
   });
   if(name==="realistic"&&realisticSkin){
-   const yawAxis=new THREE.Vector3(0,1,0);
-   for(const [boneName,neutralYaw] of Object.entries(REALISTIC_NEUTRAL_HEAD_YAW)){
-    const bone=rigged.bones.get(boneName);
-    const rest=rigged.boneRest.get(boneName);
-    if(bone&&rest){
-     const corrected=rest.clone().multiply(new THREE.Quaternion().setFromAxisAngle(yawAxis,neutralYaw));
-     bone.quaternion.copy(corrected);
-     rigged.boneRest.set(boneName,corrected);
-    }
-   }
+   rigged.headNeutral=neutralizeRealisticFoxHead(realisticSkin);
    rigged.fur=buildMicroFur(realisticSkin,36000,4137);
    rigged.furEnabled=Boolean(rigged.fur);
   }
@@ -575,7 +567,8 @@ function loadVariant(name){
   if(name==="realistic"&&!rigged.focusInit){
    rigged.focusInit=true;
    setFocusMode(true);
-   setFaceCamera(true);
+   fox.orientation=headingTo(fox.pos,camera.position);
+   fox.root.rotation.y=fox.orientation;
   }
  },undefined,error=>{
   console.error("3D model load error",name,error);

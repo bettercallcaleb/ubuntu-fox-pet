@@ -1,3 +1,13 @@
+# FOX / 17 — Stable full-body turning
+
+![RTX 3060 real in-game before and after: paw crossover eliminated](docs/v17-turning-before-after.jpg)
+
+[**See actual corrected animation: 12.6-second live Ubuntu RTX 3060 recording**](docs/v17-turn-stable-real-time.mp4)
+
+When `Face Me` rotates a 29-bone skinned fox in place, the old world-planted foot targets remained static while the pelvis rotated. The IK algorithm pulled its paws across the other side of the body (up to 0.173 scene units toe-target error), producing the visibly implausible twisted-body screenshots. In v17, in-place turns use `turn-contact-v17.js`: the four contacts smoothly follow their body-relative home positions with a small lift to suggest stepping. Normal travel keeps the existing stance/swing cycle. The secondary-motion controller reduces head twist while the body pivots. The underlying realistic fox mesh, fur system and 29-bone rig remain unchanged.
+
+`node check-turn-v17.mjs` simulates a full rotation in either direction at 15/30/60/120 FPS, verifies each paw stays on its anatomical side, tracks the body within a small bound and remains grounded. The RTX 3060 browser stress test covered six camera turns (96 samples) and a walking transition, showing no JavaScript exceptions, max 0.0051 toe error and minimum 56 FPS. Human-visible screenshots and video were captured from the running application, not synthetic renders.
+
 ## v16.1 — Correct the actual visible animal orientation
 
 ![Same angle, two different mount offsets, directly captured from Ubuntu Chrome](docs/v16-fox-visual-orientation-fix.jpg)

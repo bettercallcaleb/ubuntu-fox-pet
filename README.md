@@ -1,5 +1,17 @@
 # Ubuntu Fox Pet 🦊
 
+## v17 — No more twisted fox when turning in place
+
+**Fixes the next user-reported visual bug:** rapidly rotating a fox with the mouse caused the old planted world-space paw anchors to cross under its spinning torso. Two-bone IK tried to reach those stale anchors, visibly folding its legs and stretching the body/neck. **This is an animation/kinematics bug, not a model rotation issue.**
+
+![Actual 3060 turn frame before and after: crossed paws versus stable quadruped](real3d/docs/v17-turning-before-after.jpg)
+
+[**Watch 12.6 seconds of real corrected 360-degree camera-follow turning**](real3d/docs/v17-turn-stable-real-time.mp4)
+
+The turn-in-place branch now moves each stance contact toward its body-relative anatomical home each frame, with a small alternating paw lift. Walking retains its original planted-feet gait and furniture navigation. Head/neck gaze is limited while the torso turns, avoiding excessive neck twisting. This is a **terrain-aware contact approximation**, not a full dynamics simulation.
+
+RTX 3060 Chrome/WebGL2: the same rapid turn before and after yielded maximum toe-target error **0.173 → less than 0.000001 scene units** and peak thigh rotation away from rest **0.912 → 0.408 rad**. A second 96-sample stress test covering six camera turns found maximum toe-target error **0.0051**, minimum **56 FPS**, zero uncaught exceptions and correct final heading after each turn. Static unit tests simulate both directions of full 360-degree turning at 15, 30, 60 and 120 Hz. Independent v15 Rapier development was left untouched.
+
 ## v16.1 — Fox actually faces the viewer (visual orientation hotfix)
 
 **Fixed the real user-reported problem, not just the camera angle.** The refitted realistic fox needed a **180° model mount**, but the runtime kept mounting it at 90°. That mismatch made it look permanently sideways/backward even when the numeric body yaw was correct. The **Face Me** loop also dereferenced a null `attentionPoint`, stopping the animation frame after clicking the button.

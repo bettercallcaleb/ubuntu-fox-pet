@@ -1,5 +1,15 @@
 # Ubuntu Fox Pet 🦊
 
+## v16 — Fox can look and turn in every direction
+
+**Fixed the single-direction look/control bug.** The camera's former 142-degree horizontal clamp is gone; you can orbit a complete 360 degrees around the fox. Click **Face Me** (or press **L**) to have the fox turn toward the camera as you move it. **Right-click** or **Shift+left-click** the room to make the fox turn and look anywhere, while hovering the mouse produces subtle head tracking. Click the floor normally to resume walking.
+
+![Live RTX 3060 fox correctly facing east, north, west, south](real3d/docs/v16-fox-4-directions.jpg)
+
+[**Watch 10.6 seconds of four-direction turning in the actual Ubuntu desktop pet**](real3d/docs/v16-fox-full-direction-demo.mp4) · [Tests and implementation](real3d/README.md)
+
+The same 271,221-vertex fox and refitted 29-bone rig from PR #14 are retained. Real Chrome/RTX 3060 validation recorded 60 FPS, four correct world-space head/body orientations, active camera following, working right-click input, and no uncaught JavaScript exceptions. The existing v15 physics development branch remains separate.
+
 ## v14 — Living Fox: reducing the statue-like look
 
 ![Actual RTX 3060 living fox](real3d/docs/v14-living-fox-idle.png)

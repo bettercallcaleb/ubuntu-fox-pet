@@ -1,3 +1,13 @@
+# FOX / 20 — Stable, independent head turning
+
+The v19 neutral head correction improved the resting appearance but left the skull weighted across the chest, neck and head. Rotating the head joint stretched the face, ears and cheeks. `head-weights-v20.js` now transfers torso contributions to the head over a smooth bind-space falloff while preserving ear articulation, so skull triangles move as a rigid group and the base of the neck still bends naturally. The v19 mesh correction is performed first, followed by the skin-weight fix and then fur generation. The original asset and skeleton hierarchy are unchanged.
+
+The reproducible `check-head-v20.mjs` test reads the actual 271,221-vertex GLB, evaluates skinned triangles using the actual inverse-bind matrices and joint hierarchy, and compares v19 with v20 at ±0.5 and ±0.9 radians. At ±0.9 rad the 95th-percentile edge-length strain within the skull core falls from 30.7–32.4% to under 0.005%; checks also cover finite, normalized weights and untouched body geometry.
+
+`FOX_CDP_PORT=9259 FOX_PAGE_PORT=18768 node check-head-v20-live.mjs` tested actual Chrome with NVIDIA RTX 3060, opposite independent head gazes, a 90-degree in-place turn, walking and exception monitoring. The head separated by 0.645 rad between gazes, the body remained stationary during gaze, walking covered 0.64 world units, and the browser reported around 60 FPS with zero JavaScript exceptions. The existing source geometry still limits the perfection of the neck silhouette; this is a skinning repair, not a new professionally authored animal model.
+
+![Real browser before/after at 50-degree head turns](docs/v20-head-turn-comparison.jpg)
+
 # FOX / 19 — Corrected neutral mesh with free head and neck
 
 **Why:** The v18 fixed global model direction but introduced a permanent +0.4-radian yaw at *each* of the head and neck bones as a cosmetic compensation for the original fox mesh's sideways neutral face. The resulting head looked stuck or crooked during walking and when seen overhead. The 29-bone gait and head-to-hips vector alone did not test the **visible muzzle**.

@@ -36,6 +36,10 @@ jobs:
           node check-turn-v17.mjs
           node check-fox-axis-v18.mjs
           node check-head-v19.mjs
+          node check-head-v20.mjs
+          node --check check-head-v20-live.mjs
+          node --check head-weights-v20.js
+          test -s docs/v20-head-turn-comparison.jpg
           node --check neutral-head-v19.js
           test -s docs/v19-front-comparison.jpg
           test -s docs/v19-overhead-comparison.jpg

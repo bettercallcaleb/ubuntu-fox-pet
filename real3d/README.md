@@ -1,3 +1,13 @@
+## v16.1 — Correct the actual visible animal orientation
+
+![Same angle, two different mount offsets, directly captured from Ubuntu Chrome](docs/v16-fox-visual-orientation-fix.jpg)
+
+The source mesh was re-rigged in PR #14, but `scene.js` still mounted every character at 90° about local Y. The realistic character requires **180°**, while Enhanced and Classic remain at 90°. Before the correction, `Face Me` numerically aligned the `foxRoot` yaw but the **visible fox nose was sideways**. The `Face Me` frame loop also tried to call `.set()` on null `fox.attentionPoint`, throwing repeatedly before updating orientation. Both defects are corrected. The game starts with Face Me on; users can deliberately switch to autonomous Wander.
+
+![Live corrected front-facing model](docs/v16-fox-face-me-confirmed.png)
+
+[**Watch a recorded camera orbit with corrected facing**](docs/v16-face-me-model-correction.mp4)
+
 # FOX / 16 — Full-Direction Looking and Turning
 
 ## v16 — Free 360-degree camera orbit + fox look control

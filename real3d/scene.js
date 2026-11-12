@@ -434,7 +434,7 @@ function ikLeg(L,phase,moving,bob){
 const fox={
  root:foxRoot,torso,head,tail1,tail2,tail3,legs,
  pos:new THREE.Vector3(-.7,0,.65),target:null,orientation:0,
- phase:0,isWalking:false,action:"idle",actionTime:0,eyeTimer:0,route:[],waypointCount:0,faceAngleTarget:null,attentionPoint:null,attentionUntil:0
+ phase:0,isWalking:false,action:"idle",actionTime:0,eyeTimer:0,route:[],waypointCount:0,faceAngleTarget:null,attentionPoint:new THREE.Vector3(),attentionUntil:0
 };
 foxRoot.position.copy(fox.pos);
 foxRoot.rotation.y=.2;
@@ -508,6 +508,7 @@ function loadVariant(name){
   bound=new THREE.Box3().setFromObject(model);
   const center=bound.getCenter(new THREE.Vector3());
   model.position.set(-center.x,-bound.min.y,-center.z);
+  rigged.holder.rotation.y=name==="realistic"?Math.PI:Math.PI/2;
   rigged.holder.add(model);
   model.traverse(child=>{
    if(child.isMesh||child.isSkinnedMesh){
@@ -563,6 +564,7 @@ function loadVariant(name){
   if(name==="realistic"&&!rigged.focusInit){
    rigged.focusInit=true;
    setFocusMode(true);
+   setFaceCamera(true);
   }
  },undefined,error=>{
   console.error("3D model load error",name,error);
@@ -774,6 +776,7 @@ let focusMode=false,faceCamera=false,lastHoverAt=0;
 const lookFloor=new THREE.Plane(new THREE.Vector3(0,1,0),-.10);
 function setFaceCamera(enabled){
  faceCamera=Boolean(enabled);
+ if(!fox.attentionPoint)fox.attentionPoint=new THREE.Vector3();
  $("face").classList.toggle("active",faceCamera);
  if(faceCamera){
   fox.target=null;fox.route=[];fox.action="idle";fox.isWalking=false;
@@ -894,6 +897,7 @@ document.querySelectorAll("[data-task]").forEach(b=>b.addEventListener("click",(
 $("wander").classList.add("active");
 $("wander").addEventListener("click",()=>{
  state.wander=!state.wander;
+ if(state.wander&&faceCamera)setFaceCamera(false);
  $("wander").classList.toggle("active",state.wander);
  say(state.wander?"Autonomous roaming enabled.":"Autonomous roaming paused.");
 });
@@ -946,6 +950,7 @@ function frame(){
   t+=dt;
   if(faceCamera){
    const point=camera.position;
+   if(!fox.attentionPoint)fox.attentionPoint=new THREE.Vector3();
    fox.attentionPoint.set(point.x,.9,point.z);
    fox.attentionUntil=performance.now()+1100;
    if(!fox.target)fox.faceAngleTarget=headingTo(fox.pos,point);

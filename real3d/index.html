@@ -30,13 +30,16 @@ button span {font-size:16px;display:block;margin-bottom:4px}
 #status {position:absolute;left:21px;bottom:108px;font-size:11px;color:#edc69c;line-height:1.7;text-shadow:0 2px 4px #1b1015;max-width:360px}
 #debug {position:absolute;top:107px;right:20px;min-width:190px;padding:11px;font:11px/1.8 monospace;color:#c2d0d9;background:#151722aa;display:none}
 #pause {position:absolute;right:20px;top:89px;pointer-events:auto;background:#2c2833ba;min-width:50px;padding:8px 12px}
+#premium {position:absolute;right:20px;top:140px;pointer-events:auto;background:#684f38ec;min-width:98px;padding:9px 12px}
+#premium[hidden]{display:none}
 @media(max-width:850px){#stats{display:none}#bottom{width:calc(100vw - 12px);justify-content:center;flex-wrap:wrap;bottom:8px}button{padding:9px;min-width:72px}#hint{display:none}}
 </style>
 </head>
 <body>
 <div id="hud">
- <div id="top"><div id="brand" class="panel"><h1>FOX / 22 <span style="color:#fac193">•</span> 360° Living Fox</h1><p>29-bone fox · anatomical paws · grounded walking · tactile fetch</p></div><div id="stats" class="panel"><div class="metric"><span>FOOD <b id="foodtxt">78</b></span><div class="track"><i id="foodbar"></i></div></div><div class="metric"><span>JOY <b id="joytxt">84</b></span><div class="track"><i id="joybar"></i></div></div><div class="metric"><span>ENERGY <b id="energytxt">87</b></span><div class="track"><i id="energybar"></i></div></div><div class="metric"><span>BOND <b id="bondtxt">L1</b></span><div class="track"><i style="background:#dab0ec;width:33%" id="bondbar"></i></div></div></div></div>
+ <div id="top"><div id="brand" class="panel"><h1>FOX / 23 <span style="color:#fac193">•</span> 360° Living Fox</h1><p id="model-subtitle">29-bone fox · anatomical paws · premium-model ready</p></div><div id="stats" class="panel"><div class="metric"><span>FOOD <b id="foodtxt">78</b></span><div class="track"><i id="foodbar"></i></div></div><div class="metric"><span>JOY <b id="joytxt">84</b></span><div class="track"><i id="joybar"></i></div></div><div class="metric"><span>ENERGY <b id="energytxt">87</b></span><div class="track"><i id="energybar"></i></div></div><div class="metric"><span>BOND <b id="bondtxt">L1</b></span><div class="track"><i style="background:#dab0ec;width:33%" id="bondbar"></i></div></div></div></div>
  <button id="pause">Ⅱ</button>
+ <button id="premium" hidden title="Use locally licensed animated fox; click again to return to Real Fur">Premium Fox</button>
  <div id="note"></div>
  <div id="status">INITIALIZING HARDWARE RENDERER…</div>
  <div id="hint">Drag: orbit 360° · Wheel: zoom<br>Left-click: walk · Drag ball: throw · Stroke fox: pet<br>Right/Shift-click: look there<br>L: look at camera · F: focus · 1–6: activities</div>

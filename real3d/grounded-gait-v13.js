@@ -1,7 +1,7 @@
 import * as THREE from "./node_modules/three/build/three.module.js";
 import {groundHeight} from "./navigation-v13.js";
 import {createLivingFoxMotion} from "./living-motion-v14.js";
-import {aimBone, solveTwoBone, createPoseKit} from "./fox-rig-v15.js";
+import {aimBone, solveTwoBone} from "./fox-rig-v15.js";
 import {updateTurnContact} from "./turn-contact-v17.js";
 
 // Four-legged gait for the realistic fox.
@@ -11,9 +11,9 @@ import {updateTurnContact} from "./turn-contact-v17.js";
 //    crouching to eat/play and during jumps
 //  * contact shadows follow the real toe positions
 
-const STRIDE = .5;       // distance travelled per full gait cycle (matches scene.js phase update)
-const DUTY = .7;         // fraction of the cycle a foot is on the ground
-const BASE_DROP = .03;   // normal stance keeps the legs slightly bent
+const STRIDE = .44;       // distance travelled per full gait cycle (matches scene.js phase update)
+const DUTY = .76;         // fraction of the cycle a foot is on the ground
+const BASE_DROP = .075;   // normal stance keeps the legs slightly bent
 const FLOOR_OFFSET = .02;
 const clamp = (x, min, max) => Math.max(min, Math.min(max, x));
 const damp = (x, y, k, dt) => THREE.MathUtils.damp(x, y, k, dt);
@@ -34,8 +34,7 @@ function contactTexture() {
 const v1 = new THREE.Vector3(), v2 = new THREE.Vector3(), v3 = new THREE.Vector3();
 const forward = new THREE.Vector3(), bend = new THREE.Vector3(), dirFoot = new THREE.Vector3();
 const K = new THREE.Vector3(), E = new THREE.Vector3(), H = new THREE.Vector3(), Ta = new THREE.Vector3();
-const ft = new THREE.Vector3(), dirTmp = new THREE.Vector3(), tgt = new THREE.Vector3(), sideAxis = new THREE.Vector3();
-const flexQ = new THREE.Quaternion(), parentQ = new THREE.Quaternion(), axisLocal = new THREE.Vector3();
+const dirTmp = new THREE.Vector3(), tgt = new THREE.Vector3();
 
 const LEGS = [["L1", 0, false, -1], ["L0", .25, true, -1], ["R1", .5, false, 1], ["R0", .75, true, 1]];
 
@@ -47,8 +46,6 @@ export function createGroundedGait({scene, fox, foxRoot, rigged}) {
   let initialized = false, bodyY = 0, amplitude = 0, lastPhase = fox.phase || 0, cadence = 1.5, lastSettle = 0;
   let meanError = 0, maxError = 0, plantedCount = 0;
   const living = createLivingFoxMotion({fox, rigged, foxRoot});
-  const kit = createPoseKit({rigged, foxRoot});
-  const rootQ = new THREE.Quaternion(), desiredQ = new THREE.Quaternion(), flexRot = new THREE.Quaternion();
 
   function initialize() {
     if (!rigged.bones?.size) return false;
@@ -71,7 +68,7 @@ export function createGroundedGait({scene, fox, foxRoot, rigged}) {
       shadow.renderOrder = 5;
       scene.add(shadow);
       legs.push({name, front, side, thigh, shin, foot, toe, home, l1, l2, lt, target, plant: target.clone(), from: target.clone(), to: target.clone(),
-        shadow, swing: false, swingAt: 0, swingDuration: .25, lastCycle: -1, phaseOffset: off, error: 0, footPitch: .25, lift: 0, alpha: 0});
+        shadow, swing: false, swingAt: 0, swingDuration: .25, lastCycle: -1, phaseOffset: off, error: 0, footPitch: front ? .78 : .63, lift: 0, alpha: 0});
     }
     const fronts = legs.filter(l => l.front);
     if (fronts.length) frontHomeX = fronts.reduce((a, l) => a + l.home.x, 0) / fronts.length;
@@ -93,58 +90,24 @@ export function createGroundedGait({scene, fox, foxRoot, rigged}) {
     for (const bone of [leg.thigh, leg.shin, leg.foot, leg.toe]) bone.quaternion.copy(rigged.boneRest.get(bone.name));
     leg.thigh.updateMatrixWorld(true);
   }
-  function flexAroundSide(bone, angle) {
-    bone.parent.getWorldQuaternion(parentQ).invert();
-    axisLocal.copy(sideAxis).applyQuaternion(parentQ).normalize();
-    flexQ.setFromAxisAngle(axisLocal, angle);
-    bone.quaternion.premultiply(flexQ).normalize();
-    bone.updateMatrixWorld(true);
-  }
-
   // Place the toe at `T` (world) with a rigid-ish paw: two-bone IK on thigh/shin to the ankle,
   // then orient the paw.
   function solveLeg(leg, T, dt) {
-    const front = leg.front;
-    bend.copy(forward).multiplyScalar(front ? -1 : 1);
+    bend.copy(forward).multiplyScalar(leg.front ? -1 : 1);
     leg.thigh.getWorldPosition(H);
     const swingFlex = leg.swing ? Math.sin(Math.PI * leg.alpha) : 0;
-    if (front) {
-      // The paw mesh points forward from the ankle: keep it flat (body-relative rest orientation)
-      // instead of letting it tilt with the forearm. Solve, flatten, then correct the small toe offset.
-      for (let pass = 0; pass < 2; pass++) {
-        leg.foot.getWorldPosition(v1); leg.toe.getWorldPosition(v2);
-        ft.subVectors(v2, v1);
-        Ta.subVectors(T, ft);
-        solveTwoBone(H, leg.l1, leg.l2, Ta, bend, K, E);
-        aimBone(leg.thigh, leg.shin, dirTmp.subVectors(K, H).normalize());
-        aimBone(leg.shin, leg.foot, dirTmp.subVectors(E, K).normalize());
-        flattenFoot(leg, swingFlex);
-      }
-    } else {
-      leg.footPitch = damp(leg.footPitch, leg.swing ? -.55 : .28, 16, dt);
-      const pitch = leg.footPitch - .35 * swingFlex;
-      dirFoot.set(0, -Math.cos(pitch), 0).addScaledVector(forward, Math.sin(pitch));
-      Ta.copy(T).addScaledVector(dirFoot, -leg.lt);
-      solveTwoBone(H, leg.l1, leg.l2, Ta, bend, K, E);
+    const basePitch = leg.front ? .78 : .63;
+    const flexPitch = leg.front ? .20 : .18;
+    leg.footPitch = damp(leg.footPitch, basePitch + flexPitch * swingFlex, 15, dt);
+    dirFoot.set(0, -Math.cos(leg.footPitch), 0).addScaledVector(forward, Math.sin(leg.footPitch)).normalize();
+    Ta.copy(T).addScaledVector(dirFoot, -leg.lt);
+    const maxAngle = (leg.front ? 173 : 170) * Math.PI / 180;
+    for (let pass = 0; pass < 2; pass++) {
+      solveTwoBone(H, leg.l1, leg.l2, Ta, bend, K, E, maxAngle);
       aimBone(leg.thigh, leg.shin, dirTmp.subVectors(K, H).normalize());
       aimBone(leg.shin, leg.foot, dirTmp.subVectors(E, K).normalize());
       aimBone(leg.foot, leg.toe, dirFoot);
     }
-  }
-
-  // orient the foot to its rest orientation relative to the body, flexed by `flex` radians about the body's side axis
-  function flattenFoot(leg, swingFlex) {
-    const rest = kit.restQuat(leg.foot.name);
-    if (!rest) return;
-    foxRoot.getWorldQuaternion(rootQ);
-    desiredQ.copy(rootQ).multiply(rest);
-    if (swingFlex > 0) {
-      flexRot.setFromAxisAngle(sideAxis, -.55 * swingFlex);
-      desiredQ.premultiply(flexRot);
-    }
-    leg.foot.parent.getWorldQuaternion(parentQ).invert();
-    leg.foot.quaternion.copy(parentQ.multiply(desiredQ));
-    leg.foot.updateMatrixWorld(true);
   }
 
   // body-relative foot targets for non-walking postures
@@ -181,7 +144,6 @@ export function createGroundedGait({scene, fox, foxRoot, rigged}) {
     bodyY = damp(bodyY, targetBody, P.air > .01 || P.lift > .01 ? 28 : 10, dt);
     foxRoot.position.y = bodyY;
     forward.set(Math.cos(fox.orientation), 0, -Math.sin(fox.orientation));
-    sideAxis.set(Math.sin(fox.orientation), 0, Math.cos(fox.orientation));
     foxRoot.updateMatrixWorld(true);
 
     const postureWeight = Math.max(P.lie, P.sit, P.crouch, P.air);
@@ -198,8 +160,8 @@ export function createGroundedGait({scene, fox, foxRoot, rigged}) {
 
       const turningContact = turningInPlace && postureWeight < .05;
       if (!turningContact && !leg.swing && postureWeight < .05) {
-        const due = moving && p >= DUTY && leg.lastCycle !== cycle;
-        const overStretched = moving && distance > STRIDE * .62;
+        const due = moving && p >= DUTY && leg.lastCycle !== cycle && swinging < 2;
+        const overStretched = moving && distance > (leg.front ? .205 : .215) && swinging < 2;
         const settle = !moving && distance > .09 && swinging < 1 && t - lastSettle > .14;
         if (due || overStretched || settle) {
           leg.swing = true; leg.swingAt = t; leg.alpha = 0;
@@ -207,7 +169,7 @@ export function createGroundedGait({scene, fox, foxRoot, rigged}) {
           if (due) leg.lastCycle = cycle;
           if (settle) lastSettle = t;
           leg.from.copy(leg.plant);
-          const reach = clamp(speed / .5, 0, 1) * STRIDE * DUTY * .5 + speed * leg.swingDuration;
+          const reach = clamp(speed / .5, 0, 1) * STRIDE * DUTY * .42 + speed * leg.swingDuration;
           leg.to.set(home.x + forward.x * (settle ? 0 : reach), gHome, home.z + forward.z * (settle ? 0 : reach));
           swinging++;
         }
@@ -219,7 +181,7 @@ export function createGroundedGait({scene, fox, foxRoot, rigged}) {
         leg.alpha = clamp((t - leg.swingAt) / leg.swingDuration, 0, 1);
         const k = ease(leg.alpha);
         leg.target.lerpVectors(leg.from, leg.to, k);
-        const clearance = leg.front ? .082 : .068;
+        const clearance = leg.front ? .056 : .048;
         leg.target.y = groundHeight(leg.target.x, leg.target.z) + FLOOR_OFFSET + clearance * Math.pow(Math.sin(Math.PI * leg.alpha), .8);
         if (leg.alpha >= 1) {
           leg.swing = false;

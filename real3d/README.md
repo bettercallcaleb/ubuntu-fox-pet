@@ -1,3 +1,15 @@
+# FOX / 22 — Anatomical four-leg gait and paw contact
+
+The previous front paws pitched toward the floor during the forward swing, with curled-back tips; extended hind legs could nearly lock at a 178-degree knee. The gait now aims all four foot-to-toe chains in the animal's forward direction with front/hind-specific angles and independently smoothed swing flex. The analytic IK solver has optional anatomical knee limits (173 degrees front and 170 degrees hind) instead of the near-straight singularity. The root rides slightly lower so these limits do not cause persistent floating feet.
+
+The step plan now uses a shorter 0.44-unit stride with a longer stance interval and smaller swing clearance. New steps can begin before excessive rearward extension, and simultaneous airborne limbs are capped at two. Realistic-fox walking pace is reduced to 0.62 scene units/s; other fox variants are untouched. Head, fur, tasks, ball physics and the room remain unchanged. This is still an approximate two-bone IK model, not a motion-captured quadruped or full dynamics simulation.
+
+**Validation:** `node check-leg-v22.mjs` tests 120 constrained IK configurations. `FOX_CDP_PORT=9264 node check-leg-v22-live.mjs` runs the actual realistic skinned fox in Chrome through four compass directions, a sleep-to-stand transition and a standing turn. Mean world-toe contact errors across those four walking directions were 0.002–0.010 scene units, no limb exceeded its anatomical extension limit, maximum airborne legs was two, and there were zero JavaScript exceptions. RTX 3060 live regression also passed head gaze, turn, walking, petting and throw-to-chase behavior at roughly 60 FPS. Contact remains an approximation and occasional individual targets deviate further during transitions.
+
+![Live Ubuntu RTX 3060 side-view walking frames](docs/v22-anatomical-gait.jpg)
+
+---
+
 # FOX / 21 — Direct interaction: tactile petting and physical ball play
 
 The desktop fox now distinguishes a click from a sustained stroke: press and drag across the visible fox to pet it. Stroke duration, pointer contact and travel must all qualify before the larger joy/bond response is awarded. A single click is still a brief pat. Idle pointer hover steers the animal's attention rather than automatically awarding affection.

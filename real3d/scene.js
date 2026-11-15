@@ -599,9 +599,9 @@ $("variant").addEventListener("click",()=>loadVariant(rigged.variant==="realisti
 $("neural").addEventListener("click",()=>{window.location.href="./neural/";});
 $("cinema").addEventListener("click",()=>{window.location.href="./rtx4090/";});
 
-const GAIT_STRIDE=.5; // distance travelled per gait cycle; keeps stance feet from sliding (see grounded-gait-v13.js)
+const GAIT_STRIDE=.44; // distance travelled per gait cycle; keeps stance feet from sliding (see grounded-gait-v13.js)
 function updateFox(dt,t){
- const pace=rigged.variant==="realistic"?0.74:rigged.variant==="enhanced"?0.75:1.16;
+ const pace=rigged.variant==="realistic"?0.62:rigged.variant==="enhanced"?0.75:1.16;
  const beforeX=fox.pos.x,beforeZ=fox.pos.z,beforeO=fox.orientation;
  const gate=fox.moveGate??1; // below ~0.55 the fox is still getting up from lying/sitting
  if(fox.target){

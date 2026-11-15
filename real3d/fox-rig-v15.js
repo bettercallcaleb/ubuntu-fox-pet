@@ -83,10 +83,11 @@ const dv = new THREE.Vector3(), perp = new THREE.Vector3();
 
 // Analytic two-bone solve. Writes the middle joint into outK and the (possibly clamped)
 // reachable end position into outE. bend is the preferred direction for the middle joint.
-export function solveTwoBone(H, l1, l2, T, bend, outK, outE) {
+export function solveTwoBone(H, l1, l2, T, bend, outK, outE, maxStraightAngle = Math.PI) {
   dv.subVectors(T, H);
   let dist = dv.length();
-  const maxR = l1 + l2 - 1e-4, minR = Math.abs(l1 - l2) + 1e-3;
+  const anatomicalR = Math.sqrt(Math.max(0,l1*l1 + l2*l2 - 2*l1*l2*Math.cos(maxStraightAngle)));
+  const maxR = Math.min(l1 + l2 - 1e-4, anatomicalR), minR = Math.abs(l1 - l2) + 1e-3;
   if (dist < 1e-6) dv.set(0, -1, 0), dist = 1e-6; else dv.multiplyScalar(1 / dist);
   dist = Math.min(maxR, Math.max(minR, dist));
   const a = (l1 * l1 - l2 * l2 + dist * dist) / (2 * dist);

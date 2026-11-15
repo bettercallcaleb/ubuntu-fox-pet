@@ -21,7 +21,7 @@ cd real3d
 bash tools/install-premium-fox.sh "/path/to/licensed/fox.fbx"
 ```
 
-The installer supports `.fbx`, `.blend`, and `.glb`. For FBX or Blender sources, it uses the installed Blender to export glTF 2.0 binary, preserving any compatible actions and textures. It refuses any model lacking skinned joints or identifiable walk/idle animations. It writes the resulting file to **`real3d/assets/premium/fox-premium.glb`**, outside Git and outside the project's distributable assets.
+The installer supports `.fbx`, `.blend`, and `.glb`. For FBX or Blender sources, it uses the installed Blender to export glTF 2.0 binary, preserving any compatible actions and textures. The converter exports only meshes bound to the armature, excluding unrelated preview props and demonstration meshes. It refuses any model lacking skinned joints or identifiable walk/idle animations. It writes the resulting file to **`real3d/assets/premium/fox-premium.glb`**, outside Git and outside the project's distributable assets.
 
 Refresh the desktop app. A **Premium Fox** button then appears below Pause. Select it to switch to the native-animation model, or select it again to return to Real Fur. The existing model-selector button also includes Premium when installed.
 
@@ -39,6 +39,6 @@ Native animation clips are chosen from descriptive action names (walk, idle, sit
 
 Missing, invalid, or corrupted premium assets must not replace a successfully loaded default fox. The app does not automatically publish the licensed geometry. No commercial asset files, source texture archives, extracted textures, or license keys belong in this repository.
 
-Validation: `node check-premium-v23.mjs` covers semantic clip selection, root-motion anchoring, joint requirements, and forward axes. The Blender conversion pipeline was exercised with a separately licensed Bake3D 29-joint/3-clip fox and independently verified as valid GLB. `node check-premium-v23-live.mjs` is an opt-in real-browser test requiring a local stand-in at the private premium asset path; the file is removed when testing finishes.
+Validation: `node check-premium-v23.mjs` covers semantic clip selection, root-motion anchoring, joint requirements, and forward axes. The Blender conversion pipeline was exercised with a separately licensed Bake3D 29-joint/3-clip fox in both GLB → Blend → GLB and GLB → FBX → GLB round trips; all three animation clips were preserved, and unbound demonstration props were removed from the FBX output. `node check-premium-v23-live.mjs` is an opt-in real-browser test requiring a local stand-in at the private premium asset path; the file is removed when testing finishes.
 
 **Not yet verified:** Radbill's actual paid asset, its true action naming convention, complete 100+ clip export, fur rendering fidelity, or foot-to-floor contact. Those can only be verified from the authorized deliverable.

@@ -8,6 +8,7 @@ import {headingTo,turnToward,gazeOffset,wrapAngle,wrappedOrbit} from "./fox-faci
 import {REALISTIC_MOUNT_YAW} from "./fox-axis-v18.js";
 import {neutralizeRealisticFoxHead} from "./neutral-head-v19.js";
 import {stabilizeHeadSkinning} from "./head-weights-v20.js";
+import {gradePetStroke,isBallFree,stepRollingBall,throwVelocity} from "./physical-interaction-v21.js";
 
 const TAU=Math.PI*2;
 const scene=new THREE.Scene();
@@ -683,6 +684,9 @@ function updateFox(dt,t){
 
 const state={food:78,joy:84,energy:87,bond:9,paused:false,wander:true,task:null,lastTask:0,
  fps:0,frame:0,frameTimer:0,ballVelocity:new THREE.Vector3(),ballRolling:false};
+const fetchSession={active:false,started:0,lastPlan:-100,plan:null,chases:0,contacts:0};
+const BALL_RADIUS=.205;
+let lastPetAt=-10000;
 try{
  const saved=JSON.parse(localStorage.getItem("ubuntu-fox-3d-state")||"{}");
  for(const key of ["food","joy","energy","bond"]){
@@ -699,6 +703,7 @@ function taskTarget(name){
  return x?x.clone():null;
 }
 function walkTo(destination,name=null){
+ if(name!=="__fetch")fetchSession.active=false;
  const points=findRoute(fox.pos,destination);
  if(!points.length){
   say("No clear walking route to that location.");
@@ -713,6 +718,7 @@ function walkTo(destination,name=null){
  return true;
 }
 function task(name){
+ fetchSession.active=false;
  if(state.paused){state.paused=false;$("pause").textContent="Ⅱ";}
  const location=taskTarget(name);
  if(!location)return;
@@ -742,12 +748,12 @@ function arrive(){
   state.energy=clamp(state.energy+12,0,100);
   say("Resting by the warm bed.");
  }else if(name==="ball"){
-  const away=new THREE.Vector3(ball.position.x-fox.pos.x,0,ball.position.z-fox.pos.z).normalize();
-  if(away.lengthSq()<.1)away.set(.9,0,.4);
-  state.ballVelocity.copy(away.multiplyScalar(1.7));
-  state.ballVelocity.x+=.8;
-  fox.action="play";state.joy=clamp(state.joy+8,0,100);state.bond+=3;
-  say("The ball rolls in 3D.");
+  const away=new THREE.Vector3(ball.position.x-fox.pos.x,0,ball.position.z-fox.pos.z);
+  if(away.lengthSq()<.01)away.set(.9,0,.4);
+  away.normalize().multiplyScalar(2.5);
+  state.ballVelocity.set(away.x,0,away.z);
+  beginFetch();
+  say("Chasing the rolling ball!");
  }else if(name==="food"){
   state.food=clamp(state.food+19,0,100);state.bond+=2;
   say("A well-earned meal.");
@@ -763,12 +769,63 @@ function arrive(){
  }
  save();
 }
-function petFox(){
- state.joy=clamp(state.joy+3,0,100);
- state.bond++;
- fox.action="pet";fox.actionTime=performance.now()/1000;
- say("Good fox. Tail and ears respond independently.");
+function petFox(stroke=null){
+ const now=performance.now();
+ if(now-lastPetAt<650)return false;
+ lastPetAt=now;
+ const reward=stroke?.accepted?stroke:{joy:1,bond:1,label:"A friendly pat"};
+ state.joy=clamp(state.joy+reward.joy,0,100);
+ state.bond+=reward.bond;
+ fox.action="pet";fox.actionTime=now/1000;
+ fox.attentionUntil=now+1600;
+ say(reward.label+" — ears and tail respond.");
  save();
+ return true;
+}
+function beginFetch(){
+ if(faceCamera)setFaceCamera(false);
+ state.wander=false;$("wander").classList.remove("active");
+ fetchSession.active=true;fetchSession.started=performance.now()/1000;
+ fetchSession.lastPlan=-100;fetchSession.plan=null;fetchSession.chases++;
+ fox.attentionPoint.set(ball.position.x,.45,ball.position.z);
+ fox.attentionUntil=performance.now()+1600;
+}
+function updateFetch(now){
+ if(!fetchSession.active)return;
+ const elapsed=now-fetchSession.started;
+ if(elapsed>28){fetchSession.active=false;return;}
+ const dx=ball.position.x-fox.pos.x,dz=ball.position.z-fox.pos.z;
+ const distance=Math.hypot(dx,dz);
+ if(elapsed>.55&&((distance<.65&&!fox.isWalking&&state.ballVelocity.length()<.85)||distance<.46)){
+  fetchSession.active=false;fetchSession.contacts++;
+  const d=Math.max(.08,distance);
+  state.ballVelocity.set((dx/d)*1.35,0,(dz/d)*1.35);
+  fox.target=null;fox.route=[];fox.isWalking=false;
+  state.task=null;fox.action="play";fox.actionTime=now;
+  fox.faceAngleTarget=headingTo(fox.pos,ball.position);
+  state.joy=clamp(state.joy+7,0,100);state.bond+=2;save();
+  say("Caught it! A little nose nudge.");
+  return;
+ }
+ fox.attentionPoint.set(ball.position.x,.43,ball.position.z);
+ fox.attentionUntil=performance.now()+900;
+ const goal={x:ball.position.x+state.ballVelocity.x*.15,z:ball.position.z+state.ballVelocity.z*.15};
+ const far=fetchSession.plan?Math.hypot(goal.x-fetchSession.plan.x,goal.z-fetchSession.plan.z)>.35:true;
+ if(now-fetchSession.lastPlan>.95&&(far||!fox.target)){
+  fetchSession.lastPlan=now;
+  fetchSession.plan=goal;
+  walkTo(new THREE.Vector3(goal.x,0,goal.z),"__fetch");
+ }
+}
+function updateRollingBall(dt){
+ const b={x:ball.position.x,z:ball.position.z,vx:state.ballVelocity.x,vz:state.ballVelocity.z};
+ const result=stepRollingBall(b,dt,{room:NAV_INFO.room,obstacles:NAV_INFO.obstacles,radius:BALL_RADIUS});
+ const dx=b.x-ball.position.x,dz=b.z-ball.position.z;
+ ball.position.set(b.x,groundHeight(b.x,b.z)+BALL_RADIUS,b.z);
+ ball.rotation.z-=dx/BALL_RADIUS;
+ ball.rotation.x+=dz/BALL_RADIUS;
+ state.ballVelocity.set(b.vx,0,b.vz);
+ state.ballRolling=result.speed>.025;
 }
 
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
@@ -786,6 +843,7 @@ function setFaceCamera(enabled){
  if(!fox.attentionPoint)fox.attentionPoint=new THREE.Vector3();
  $("face").classList.toggle("active",faceCamera);
  if(faceCamera){
+  fetchSession.active=false;
   fox.target=null;fox.route=[];fox.action="idle";fox.isWalking=false;
   state.task=null;state.wander=false;
   $("wander").classList.remove("active");
@@ -798,6 +856,7 @@ function setFaceCamera(enabled){
 }
 function lookAtPoint(point){
  if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.z))return false;
+ fetchSession.active=false;
  if(Math.hypot(point.x-fox.pos.x,point.z-fox.pos.z)<.08)return false;
  if(faceCamera)setFaceCamera(false);
  fox.target=null;fox.route=[];fox.isWalking=false;
@@ -832,67 +891,134 @@ function updateCamera(){
  camera.lookAt(orbit.focus);
 }
 updateCamera();
-function onPointerUp(event){
- if(!drag)return;
- const wasMove=drag.moved,button=drag.button,shift=drag.shift;
- drag=null;renderer.domElement.style.cursor="grab";
- if(wasMove)return;
+function pointFromEvent(event){
  const rect=renderer.domElement.getBoundingClientRect();
  pointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
  raycaster.setFromCamera(pointer,camera);
- if(button===2||(button===0&&shift)){
-  const hit=raycaster.ray.intersectPlane(lookFloor,new THREE.Vector3());
-  if(hit)lookAtPoint(hit);
-  return;
- }
- if(button!==0)return;
- const hits=raycaster.intersectObjects(picking,true);
- if(!hits.length)return;
- const hit=hits[0];let current=hit.object;
+}
+function hitKind(object){
+ let current=object;
  while(current){
-  if(current.userData.fox){petFox();return;}
-  if(current.userData.task){task(current.userData.task);return;}
-  if(current.userData.floor){
-   const v=hit.point;
-   walkTo(new THREE.Vector3(clamp(v.x,-4.53,4.47),0,clamp(v.z,-3.20,3.06)));
-   say("Walking through an actual 3D space.");
-   return;
-  }
+  if(current.userData.fox)return "fox";
+  if(current.userData.task==="ball")return "ball";
+  if(current.userData.task)return current.userData.task;
+  if(current.userData.floor)return "floor";
   current=current.parent;
  }
+ return null;
+}
+function projectedBallPoint(event){
+ pointFromEvent(event);
+ const plane=new THREE.Plane(new THREE.Vector3(0,1,0),-ball.position.y);
+ return raycaster.ray.intersectPlane(plane,new THREE.Vector3());
+}
+function onPointerUp(event){
+ if(!drag||event.pointerId!==drag.id)return;
+ const active=drag;drag=null;
+ renderer.domElement.style.cursor="grab";
+ if(active.mode==="pet"){
+  const duration=performance.now()-active.start;
+  const stroke=gradePetStroke({duration,distance:active.distance,contact:active.contact});
+  if(stroke.accepted)petFox(stroke);
+  else if(!active.moved)petFox();
+  return;
+ }
+ if(active.mode==="ball"){
+  if(active.moved){
+   const velocity=throwVelocity(active.samples);
+   state.ballVelocity.set(velocity.x,0,velocity.z);
+   beginFetch();
+   say(velocity.speed>.5?"Thrown! The fox is tracking your ball.":"The fox is coming to investigate.");
+  }else task("ball");
+  return;
+ }
+ if(active.moved)return;
+ pointFromEvent(event);
+ if(active.button===2||(active.button===0&&active.shift)){
+  const hit=raycaster.ray.intersectPlane(lookFloor,new THREE.Vector3());
+  if(hit){fetchSession.active=false;lookAtPoint(hit);}
+  return;
+ }
+ if(active.button!==0)return;
+ const hits=raycaster.intersectObjects(picking,true);
+ if(!hits.length)return;
+ const hit=hits[0],kind=hitKind(hit.object);
+ if(kind==="fox"){petFox();return;}
+ if(kind==="floor"){
+  const v=hit.point;
+  walkTo(new THREE.Vector3(clamp(v.x,-4.53,4.47),0,clamp(v.z,-3.20,3.06)));
+  say("Following your footsteps.");
+ }else if(kind)task(kind);
 }
 renderer.domElement.addEventListener("pointerdown",event=>{
  if(event.button!==0&&event.button!==2)return;
+ pointFromEvent(event);
+ const hit=event.button===0&&!event.shiftKey?raycaster.intersectObjects([foxClick,ball],true)[0]:null;
+ const kind=hit?hitKind(hit.object):null;
+ const mode=kind==="fox"?"pet":kind==="ball"?"ball":"orbit";
  renderer.domElement.setPointerCapture(event.pointerId);
- drag={x:event.clientX,y:event.clientY,moved:false,button:event.button,shift:event.shiftKey};
- renderer.domElement.style.cursor="grabbing";
+ drag={id:event.pointerId,x:event.clientX,y:event.clientY,moved:false,
+  button:event.button,shift:event.shiftKey,mode,start:performance.now(),last:performance.now(),
+  distance:0,contact:0,samples:[],offsetX:0,offsetZ:0};
+ if(mode==="ball"){
+  const p=projectedBallPoint(event);
+  if(p){drag.offsetX=ball.position.x-p.x;drag.offsetZ=ball.position.z-p.z;}
+  drag.samples.push({x:ball.position.x,z:ball.position.z,time:performance.now()});
+  state.ballVelocity.set(0,0,0);
+ }else if(mode==="pet"&&!state.paused){
+  fetchSession.active=false;
+  state.wander=false;$("wander").classList.remove("active");
+  fox.target=null;fox.route=[];fox.action="pet";fox.actionTime=performance.now()/1000;
+  state.task=null;document.querySelectorAll("[data-task]").forEach(b=>b.classList.remove("active"));
+  fox.faceAngleTarget=null;
+ }
+ renderer.domElement.style.cursor=mode==="pet"?"crosshair":"grabbing";
 });
 renderer.domElement.addEventListener("pointermove",event=>{
  if(!drag){
   const now=performance.now();
   if(!faceCamera&&!fox.target&&!state.paused&&now-lastHoverAt>90){
-   lastHoverAt=now;
-   const rect=renderer.domElement.getBoundingClientRect();
-   pointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
-   raycaster.setFromCamera(pointer,camera);
-   const hit=raycaster.ray.intersectPlane(lookFloor,new THREE.Vector3());
-   if(hit){
-    fox.attentionPoint=hit.clone();
-    fox.attentionUntil=now+1050;
-   }
+   lastHoverAt=now;pointFromEvent(event);
+   const hit=raycaster.intersectObject(foxClick,false)[0];
+   renderer.domElement.style.cursor=hit?"pointer":"grab";
+   const aim=hit?hit.point:raycaster.ray.intersectPlane(lookFloor,new THREE.Vector3());
+   if(aim){fox.attentionPoint=aim.clone();fox.attentionUntil=now+1050;}
   }
   return;
  }
- const dx=event.clientX-drag.x,dy=event.clientY-drag.y;
+ if(event.pointerId!==drag.id)return;
+ const now=performance.now(),dx=event.clientX-drag.x,dy=event.clientY-drag.y;
  if(Math.abs(dx)+Math.abs(dy)>3)drag.moved=true;
- if(drag.moved){
+ if(drag.mode==="pet"){
+  pointFromEvent(event);
+  const hit=raycaster.intersectObject(foxClick,false)[0];
+  if(hit){
+   drag.distance+=Math.hypot(dx,dy);
+   drag.contact+=Math.min(100,now-drag.last);
+   fox.attentionPoint=hit.point.clone();fox.attentionUntil=now+1300;
+   fox.action="pet";
+  }
+ }else if(drag.mode==="ball"){
+  const p=projectedBallPoint(event);
+  if(p){
+   const room=NAV_INFO.room;
+   const x=clamp(p.x+drag.offsetX,room.minX+BALL_RADIUS,room.maxX-BALL_RADIUS);
+   const z=clamp(p.z+drag.offsetZ,room.minZ+BALL_RADIUS,room.maxZ-BALL_RADIUS);
+   if(isBallFree(x,z,BALL_RADIUS,room,NAV_INFO.obstacles)){
+    ball.position.set(x,groundHeight(x,z)+BALL_RADIUS,z);
+    drag.samples.push({x,z,time:now});
+    drag.samples=drag.samples.filter(s=>now-s.time<=190);
+   }
+  }
+ }else if(drag.moved){
   orbit.azimuth=wrappedOrbit(orbit.azimuth,-dx*.006);
   orbit.elevation=clamp(orbit.elevation+dy*.004,.13,.94);
   updateCamera();
  }
- drag.x=event.clientX;drag.y=event.clientY;
+ drag.x=event.clientX;drag.y=event.clientY;drag.last=now;
 });
 renderer.domElement.addEventListener("pointerup",onPointerUp);
+renderer.domElement.addEventListener("pointercancel",()=>{drag=null;renderer.domElement.style.cursor="grab";});
 renderer.domElement.style.cursor="grab";
 renderer.domElement.addEventListener("contextmenu",e=>e.preventDefault());
 renderer.domElement.addEventListener("wheel",e=>{
@@ -946,6 +1072,7 @@ $("debug").innerHTML="GPU: "+gpuName+"<br>Vendor: "+gpuVendor+"<br>Renderer: THR
 window.__fox3d={gpuName,gpuVendor,renderer,scene,camera,fox,state,task,updateFox,walkTo,orbit,rigged,updateCamera,lookAtPoint,setFaceCamera,getFaceCamera:()=>faceCamera};
 window.__fox3dGait={diagnostics:()=>groundedGait.diagnostics(),snap:()=>groundedGait.snap(),groundHeight};
 window.__fox3dNavigation={route:findRoute,blocked:pathBlocked,info:NAV_INFO};
+window.__fox3dInteraction={ball,fetchSession,beginFetch,petFox,updateRollingBall,gradePetStroke};
 window.__fox3dReady=true;
 
 const clock=new THREE.Clock();
@@ -964,13 +1091,8 @@ function frame(){
   }
   updateFox(dt,t);
   premiumRoom.update(t);
-  ball.position.addScaledVector(state.ballVelocity,dt);
-  if(state.ballVelocity.lengthSq()>.0004){
-   ball.rotation.z+=state.ballVelocity.length()*dt/.21;
-   state.ballVelocity.multiplyScalar(Math.exp(-dt*2.4));
-   ball.position.x=clamp(ball.position.x,-3.8,4.1);
-   ball.position.z=clamp(ball.position.z,-2.6,2.95);
-  }
+  if(drag?.mode!=="ball")updateRollingBall(dt);
+  updateFetch(performance.now()/1000);
   state.food=clamp(state.food-dt*.005,0,100);
   state.energy=clamp(state.energy+(fox.isWalking?-.019:.014)*dt,0,100);
   state.joy=clamp(state.joy-dt*.003,0,100);

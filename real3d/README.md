@@ -1,3 +1,15 @@
+# FOX / 25 — Corrected oversized, distorted fox head
+
+The realistic 29-bone fox's face previously appeared disproportionately broad above a narrow neck. Source geometry was sculpted with the head angled sideways, so removing v19's neutralization left the fox looking to the side. V19 neutralization and v20 rigid head skin weights are retained, followed by a **small, smooth, localized head proportional correction**: full skull width ×0.78, height ×0.91, muzzle length ×0.94, feathered at the neck and with modestly reduced protrusion of the front bib. This does not scale the body or modify the original GLB.
+
+The corrected neutral portrait and V24 reference were rendered with the same Three.js camera, materials, lights and RTX 3060. **See [real before/after front and side views](docs/v25-head-before-after.jpg)**. The neutral V24/V25 comparison is a visual reference, not a benchmark of anatomical accuracy.
+
+Validation: `node check-head-v25.mjs` checks all 271,221 vertices and confirms a 0.781x width ratio across 1,684 skull-core sample vertices; 104,766 vertices are locally adjusted, no body/tail vertices change, max displacement is 0.0327 model units, with no invalid positions/normals or modifications to UV, joints or skin weights. Original v19/v20 deformation tests still pass. Real Chrome / RTX 3060 tests confirm left/right head movement (~0.32 radians each), walking, petting, ball fetch, and 12,000-frame collision interactions with no JS exceptions at approximately 60 FPS. Commercial premium fox model rigs are unaffected.
+
+This is an improvement to the existing approximate, hand-rigged mesh rather than a replacement with a professionally authored anatomical fox model. Small fur/neck artifacts may persist at extreme camera angles.
+
+---
+
 # FOX / 24 — Solid-body interaction and collision-aware navigation
 
 The fox no longer navigates as a single point: a four-disc footprint approximates the chest, belly, head and rear. The navigation grid expands room walls and all five furniture collision regions by **0.80 scene units**; every movement/turn frame also checks the oriented four-disc body and resolves blocked movement with sliding and optional path replanning. Emergency recovery moves a fox spawned inside an obstacle to the nearest legal pose. The ball deflects from the fox body rather than rolling through its torso. The food bowl was moved to open a genuine path to the cat tower, so 'Hop' is performed beside the tower rather than at a distance.

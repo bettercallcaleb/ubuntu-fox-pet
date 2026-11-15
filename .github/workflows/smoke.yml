@@ -49,6 +49,9 @@ jobs:
           node check-fox-axis-v18.mjs
           node check-head-v19.mjs
           node check-head-v20.mjs
+          node check-head-v25.mjs
+          node --check refine-head-v25.js
+          test -s docs/v25-head-before-after.jpg
           node --check check-head-v20-live.mjs
           node --check head-weights-v20.js
           test -s docs/v20-head-turn-comparison.jpg

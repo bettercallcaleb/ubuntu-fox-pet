@@ -8,6 +8,7 @@ import {headingTo,turnToward,gazeOffset,wrapAngle,wrappedOrbit} from "./fox-faci
 import {REALISTIC_MOUNT_YAW} from "./fox-axis-v18.js";
 import {neutralizeRealisticFoxHead} from "./neutral-head-v19.js";
 import {stabilizeHeadSkinning} from "./head-weights-v20.js";
+import {refineRealisticFoxHead} from "./refine-head-v25.js";
 import {createPremiumFoxController,analyzePremiumModel,premiumForwardYaw} from "./premium-fox-v23.js";
 import {gradePetStroke,isBallFree,stepRollingBall,throwVelocity} from "./physical-interaction-v21.js";
 import {FOX_CLEARANCE,FOX_SHAPE,bodyClear,findSafeBodyPose,moveBody,deflectBallAgainstFox} from "./body-collision-v24.js";
@@ -570,6 +571,7 @@ function loadVariant(name){
   rigged.boneRest=new Map();
   rigged.bones=new Map();
   rigged.motionLevel=0;
+  rigged.headRefine=null;
   let realisticSkin=null;
   model.traverse(obj=>{
    if(obj.isSkinnedMesh){
@@ -588,6 +590,7 @@ function loadVariant(name){
    const bindPosition=realisticSkin.geometry.getAttribute("position");
    rigged.headNeutral=neutralizeRealisticFoxHead(realisticSkin);
    rigged.headWeights=stabilizeHeadSkinning(realisticSkin,bindPosition);
+   rigged.headRefine=refineRealisticFoxHead(realisticSkin);
    rigged.fur=buildMicroFur(realisticSkin,36000,4137);
    rigged.furEnabled=Boolean(rigged.fur);
   }
@@ -614,7 +617,7 @@ function loadVariant(name){
   say(desired.label+" loaded · "+rigged.names.length+" animation clips.");
   $("status").textContent="GPU: "+gpuName+" · "+rigged.boneCount+" bone skinning · "+rigged.names.length+" animation clips · shadows";
   window.__fox3dRig={variant:name,animations:rigged.names,skinned:true,bones:rigged.boneCount,furStrands:rigged.fur?rigged.fur.geometry.getAttribute("position").count/3:0,dimensions:bound.getSize(new THREE.Vector3()).toArray()};
-  $("model-subtitle").textContent=name==="premium"?"Licensed animated fox · "+rigged.boneCount+" bones · "+rigged.names.length+" native clips":"29-bone fox · anatomical paws · premium-model ready";
+  $("model-subtitle").textContent=name==="realistic"?"Refined fox head · independent gaze · physical interactions":name==="premium"?"Licensed animated fox · "+rigged.boneCount+" bones · "+rigged.names.length+" native clips":desired.label;
   if(name==="realistic"&&!rigged.focusInit){
    rigged.focusInit=true;
    setFocusMode(true);

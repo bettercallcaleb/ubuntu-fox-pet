@@ -5,10 +5,10 @@ import {route,blocked,clearLine,groundHeight,NAV_INFO} from "./navigation-v13.js
 const tasks={
  bed:{x:-1.70,z:1.25},
  ball:{x:.2,z:1.35},
- food:{x:1.18,z:1.66},
+ food:{x:1.15,z:1.00},
  desk:{x:.94,z:-1.71},
  window:{x:-1.6,z:-2.1},
- tower:{x:2.72,z:.8}
+ tower:{x:2.10,z:.84}
 };
 const home={x:-.7,z:.65};
 for(const [name,point] of Object.entries(tasks)){
@@ -25,8 +25,8 @@ for(const [name,point] of Object.entries(tasks)){
 }
 const detour=route({x:-4.22,z:2.72},{x:-1.65,z:1.5});
 assert.ok(detour.length>1,"Bed should require an actual detour");
-const foodDetour=route(home,{x:3.9,z:2.15});
-assert.ok(foodDetour.length>1,"Bowl should force a detour");
+const foodDetour=route({x:0,z:2.5},{x:2.3,z:2.5});
+assert.ok(foodDetour.length>1,"Furniture should force a detour");
 assert.ok(NAV_INFO.obstacles.length>=5,"Expected bed, desk, tower, food and chair");
 assert.ok(groundHeight(-.28,1)>.15);
 assert.ok(groundHeight(0,-2)<.075);

@@ -10,6 +10,7 @@ import {neutralizeRealisticFoxHead} from "./neutral-head-v19.js";
 import {stabilizeHeadSkinning} from "./head-weights-v20.js";
 import {createPremiumFoxController,analyzePremiumModel,premiumForwardYaw} from "./premium-fox-v23.js";
 import {gradePetStroke,isBallFree,stepRollingBall,throwVelocity} from "./physical-interaction-v21.js";
+import {FOX_CLEARANCE,FOX_SHAPE,bodyClear,findSafeBodyPose,moveBody,deflectBallAgainstFox} from "./body-collision-v24.js";
 
 const TAU=Math.PI*2;
 const scene=new THREE.Scene();
@@ -172,10 +173,10 @@ const clickables=[];
 const targets={
  bed:new THREE.Vector3(-1.70,0,1.25),
  ball:new THREE.Vector3(.2,0,1.35),
- food:new THREE.Vector3(1.18,0,1.66),
+ food:new THREE.Vector3(1.15,0,1.00),
  desk:new THREE.Vector3(.94,0,-1.71),
  window:new THREE.Vector3(-1.6,0,-2.1),
- tower:new THREE.Vector3(2.72,0,.80)
+ tower:new THREE.Vector3(2.10,0,.84)
 };
 
 function interactive(g,task){g.userData.task=task;clickables.push(g);return g}
@@ -258,7 +259,7 @@ darkOpening.position.set(0,.02,.397);catBox.add(darkOpening);
 const catToy=sphere(tower,-.22,2.08,.33,.19,.18,.19,materials.orange);
 cyl(tower,-.22,2.35,.33,.012,.012,.41,materials.linen,7);
 
-const food=interactive(group(habitat,2.3,0,1.72),"food");
+const food=interactive(group(habitat,1.15,0,2.44),"food");
 const bowlMat=new THREE.MeshPhysicalMaterial({color:"#ddd9d1",metalness:.02,roughness:.21,clearcoat:.8});
 const outside=new THREE.Mesh(new THREE.LatheGeometry([
  new THREE.Vector2(.08,.08),new THREE.Vector2(.50,.08),new THREE.Vector2(.59,.2),new THREE.Vector2(.57,.32),
@@ -647,8 +648,40 @@ $("premium").addEventListener("click",()=>loadVariant(rigged.variant==="premium"
 $("neural").addEventListener("click",()=>{window.location.href="./neural/";});
 $("cinema").addEventListener("click",()=>{window.location.href="./rtx4090/";});
 
+const collisionState={contacts:0,recoveries:0,blocks:0,replans:0,stuckSeconds:0,lastReplan:-100,lastMove:0};
+const collisionWorld={room:NAV_INFO.room,obstacles:NAV_INFO.obstacles};
+const collisionVisuals=FOX_SHAPE.map(d=>{
+ const mesh=new THREE.Mesh(new THREE.RingGeometry(d.r-.018,d.r,36),new THREE.MeshBasicMaterial({color:0x83dfff,transparent:true,opacity:.75,depthWrite:false,side:THREE.DoubleSide}));
+ mesh.rotation.x=-Math.PI/2;mesh.renderOrder=9;mesh.visible=false;scene.add(mesh);
+ return{mesh,offset:d};
+});
+function updateCollisionVisuals(){
+ const enabled=$("debug").style.display==="block";
+ const c=Math.cos(fox.orientation),s=Math.sin(fox.orientation);
+ for(const {mesh,offset} of collisionVisuals){
+  mesh.visible=enabled;
+  if(enabled){
+   const x=fox.pos.x+c*offset.x+s*offset.z,z=fox.pos.z-s*offset.x+c*offset.z;
+   mesh.position.set(x,groundHeight(x,z)+.016,z);
+   mesh.material.color.setHex(bodyClear(fox.pos.x,fox.pos.z,fox.orientation,collisionWorld.room,collisionWorld.obstacles)?0x83dfff:0xff7777);
+  }
+ }
+}
 const GAIT_STRIDE=.44; // distance travelled per gait cycle; keeps stance feet from sliding (see grounded-gait-v13.js)
 function updateFox(dt,t){
+ if(!bodyClear(fox.pos.x,fox.pos.z,fox.orientation,collisionWorld.room,collisionWorld.obstacles)){
+  const recovery=findSafeBodyPose(fox.pos.x,fox.pos.z,fox.orientation,collisionWorld.room,collisionWorld.obstacles);
+  if(recovery){
+   fox.pos.set(recovery.x,0,recovery.z);
+   collisionState.recoveries++;
+   fox.root.position.copy(fox.pos);
+   groundedGait.snap();
+  }else{
+   fox.target=null;fox.route=[];fox.isWalking=false;
+   collisionState.blocks++;
+   return;
+  }
+ }
  const pace=rigged.variant==="realistic"?0.62:rigged.variant==="enhanced"?0.75:1.16;
  const beforeX=fox.pos.x,beforeZ=fox.pos.z,beforeO=fox.orientation;
  const gate=fox.moveGate??1; // below ~0.55 the fox is still getting up from lying/sitting
@@ -662,12 +695,32 @@ function updateFox(dt,t){
    const angle=headingTo(fox.pos,fox.target);
    const delta=gazeOffset(fox.orientation,fox.pos,fox.target);
    fox.orientation=turnToward(fox.orientation,angle,dt*3.3);
-   const fwd=new THREE.Vector3(Math.cos(fox.orientation),0,-Math.sin(fox.orientation));
+   const intended=fox.orientation;
+   const fwd=new THREE.Vector3(Math.cos(intended),0,-Math.sin(intended));
    let speed=pace*clamp(1-Math.abs(delta)/3,.28,1);
    const step=Math.min(distance,speed*dt);
-   fox.pos.addScaledVector(fwd,step);
-   fox.pos.x=clamp(fox.pos.x,-4.53,4.47);fox.pos.z=clamp(fox.pos.z,-3.20,3.06);
-
+   const resolved=moveBody({x:fox.pos.x,z:fox.pos.z,yaw:beforeO},
+    {x:fox.pos.x+fwd.x*step,z:fox.pos.z+fwd.z*step,yaw:intended},
+    collisionWorld.room,collisionWorld.obstacles);
+   fox.pos.x=resolved.x;fox.pos.z=resolved.z;fox.orientation=resolved.yaw;
+   collisionState.contacts+=resolved.contacts||0;
+   collisionState.lastMove=resolved.distance;
+   if(resolved.blocked && resolved.distance<step*.25){
+    collisionState.stuckSeconds+=dt;
+    if(collisionState.stuckSeconds>.9 && t-collisionState.lastReplan>1.4){
+     collisionState.lastReplan=t;collisionState.replans++;
+     const goal=fox.route.length?fox.route.at(-1):fox.target;
+     const reroute=findRoute(fox.pos,goal,FOX_CLEARANCE);
+     if(reroute.length){
+      fox.route=reroute.slice(1).map(p=>new THREE.Vector3(p.x,0,p.z));
+      fox.target=new THREE.Vector3(reroute[0].x,0,reroute[0].z);
+     }else{
+      fox.target=null;fox.route=[];fox.isWalking=false;
+      say("The fox stopped before the furniture.");
+     }
+     collisionState.stuckSeconds=0;
+    }
+   }else collisionState.stuckSeconds=0;
    }
   }else{
    if(fox.route.length){
@@ -681,8 +734,11 @@ function updateFox(dt,t){
  }else fox.isWalking=false;
  if(!fox.isWalking&&fox.faceAngleTarget!==null&&gate>.55){
   const delta=wrapAngle(fox.faceAngleTarget-fox.orientation);
-  fox.orientation=turnToward(fox.orientation,fox.faceAngleTarget,dt*2.8);
-  if(Math.abs(delta)<.025)fox.faceAngleTarget=null;
+  const nextYaw=turnToward(fox.orientation,fox.faceAngleTarget,dt*2.8);
+  const next=moveBody({x:fox.pos.x,z:fox.pos.z,yaw:fox.orientation},{x:fox.pos.x,z:fox.pos.z,yaw:nextYaw},collisionWorld.room,collisionWorld.obstacles);
+  fox.orientation=next.yaw;
+  collisionState.contacts+=next.contacts||0;
+  if(next.blocked || Math.abs(delta)<.025)fox.faceAngleTarget=null;
  }
  if(rigged.ready && rigged.enabled){
   const clip=fox.isWalking?"walk":fox.action==="jump"?"jump":fox.action==="pet"||fox.action==="play"?"tail":"idle";
@@ -752,7 +808,7 @@ function taskTarget(name){
 }
 function walkTo(destination,name=null){
  if(name!=="__fetch")fetchSession.active=false;
- const points=findRoute(fox.pos,destination);
+ const points=findRoute(fox.pos,destination,FOX_CLEARANCE);
  if(!points.length){
   say("No clear walking route to that location.");
   return false;
@@ -778,7 +834,7 @@ function task(name){
  food:"Snack time. Real 3D bowl, not a picture.",
  desk:"Your little companion is on coding duty.",
  window:"Watching the mountains outside.",
- tower:"Jump time. Real body elevation and shadow."
+ tower:"The fox approaches the tower before hopping."
  };
  say(messages[name]);
 }
@@ -787,7 +843,7 @@ function arrive(){
  state.task=null;
  document.querySelectorAll("[data-task]").forEach(b=>b.classList.remove("active"));
  fox.action=name==="bed"?"sleep":(name||"idle");fox.actionTime=performance.now()/1000;
- const lookAt={bed:[-3.25,1.4],food:[2.3,1.72],desk:[2.45,-2.58],window:[-1.65,-4.2],tower:[4.03,.56]};
+ const lookAt={bed:[-3.25,1.4],food:[1.15,2.44],desk:[2.45,-2.58],window:[-1.65,-4.2],tower:[4.03,.56]};
  if(lookAt[name]){
   const [tx,tz]=lookAt[name];
   fox.faceAngleTarget=headingTo(fox.pos,{x:tx,z:tz});
@@ -813,7 +869,7 @@ function arrive(){
   say("An actual 3D room, seen through a real camera.");
  }else if(name==="tower"){
   fox.action="jump";fox.actionTime=performance.now()/1000;state.joy+=4;
-  say("Jump — the whole model leaves the ground.");
+  say("A little hop beside the tower.");
  }
  save();
 }
@@ -868,6 +924,13 @@ function updateFetch(now){
 function updateRollingBall(dt){
  const b={x:ball.position.x,z:ball.position.z,vx:state.ballVelocity.x,vz:state.ballVelocity.z};
  const result=stepRollingBall(b,dt,{room:NAV_INFO.room,obstacles:NAV_INFO.obstacles,radius:BALL_RADIUS});
+ if(deflectBallAgainstFox(b,{x:fox.pos.x,z:fox.pos.z,yaw:fox.orientation},{radius:BALL_RADIUS})){
+  const valid=isBallFree(b.x,b.z,BALL_RADIUS,NAV_INFO.room,NAV_INFO.obstacles);
+  if(!valid){
+   b.x=ball.position.x;b.z=ball.position.z;
+   b.vx*=-.25;b.vz*=-.25;
+  }
+ }
  const dx=b.x-ball.position.x,dz=b.z-ball.position.z;
  ball.position.set(b.x,groundHeight(b.x,b.z)+BALL_RADIUS,b.z);
  ball.rotation.z-=dx/BALL_RADIUS;
@@ -1116,10 +1179,11 @@ const debug=gl.getExtension("WEBGL_debug_renderer_info");
 const gpuName=debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER);
 const gpuVendor=debug?gl.getParameter(debug.UNMASKED_VENDOR_WEBGL):gl.getParameter(gl.VENDOR);
 $("status").textContent="GPU: "+gpuName+" · OpenGL/WebGL 2.0 · Articulated 4-leg IK · 5,000+ fur strands";
-$("debug").innerHTML="GPU: "+gpuName+"<br>Vendor: "+gpuVendor+"<br>Renderer: THREE WebGL<br>Shadowmap: 2048²<br>Frame: <span id='fr'>--</span> FPS<br>Draw calls: <span id='dc'>--</span>";
+$("debug").innerHTML="GPU: "+gpuName+"<br>Vendor: "+gpuVendor+"<br>Renderer: THREE WebGL<br>Shadowmap: 2048²<br>Frame: <span id='fr'>--</span> FPS<br>Draw calls: <span id='dc'>--</span><br>Body collider: 4 discs<br>Contacts: <span id='collisions'>0</span><br>Recoveries: <span id='recoveries'>0</span><br>Replans: <span id='replans'>0</span>";
 window.__fox3d={gpuName,gpuVendor,renderer,scene,camera,fox,state,task,updateFox,walkTo,orbit,rigged,updateCamera,lookAtPoint,setFaceCamera,getFaceCamera:()=>faceCamera};
 window.__fox3dGait={diagnostics:()=>groundedGait.diagnostics(),snap:()=>groundedGait.snap(),groundHeight};
 window.__fox3dNavigation={route:findRoute,blocked:pathBlocked,info:NAV_INFO};
+window.__fox3dCollision={shape:"four-disc",clearance:FOX_CLEARANCE,valid:(x=fox.pos.x,z=fox.pos.z,yaw=fox.orientation)=>bodyClear(x,z,yaw,collisionWorld.room,collisionWorld.obstacles),recover:()=>findSafeBodyPose(fox.pos.x,fox.pos.z,fox.orientation,collisionWorld.room,collisionWorld.obstacles),state:collisionState};
 window.__fox3dPremium={available:()=>premiumAvailable,settings:()=>({...premiumConfig}),probe:checkPremiumAsset,diagnostics:()=>rigged.premiumController?.diagnostics()||null,load:()=>loadVariant("premium")};
 window.__fox3dInteraction={ball,fetchSession,beginFetch,petFox,updateRollingBall,gradePetStroke};
 window.__fox3dReady=true;
@@ -1160,12 +1224,16 @@ function frame(){
   updateCamera();
  }
  if(performance.now()>noteUntil)notes.style.opacity="0";
+ updateCollisionVisuals();
  renderer.render(scene,camera);
  state.frame++;state.frameTimer+=dt;
  if(state.frameTimer>=.7){
   const fps=Math.round(state.frame/state.frameTimer);
   state.frame=0;state.frameTimer=0;
   const f=$("fr"),d=$("dc");
+  $("collisions").textContent=collisionState.contacts;
+  $("recoveries").textContent=collisionState.recoveries;
+  $("replans").textContent=collisionState.replans;
   if(f)f.textContent=fps;
   if(d)d.textContent=renderer.info.render.calls;
   updateHUD();

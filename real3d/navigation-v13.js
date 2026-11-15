@@ -3,7 +3,7 @@ const OBSTACLES=[
  {name:"bed",minX:-4.51,maxX:-2.00,minZ:.39,maxZ:2.42},
  {name:"desk",minX:1.13,maxX:3.78,minZ:-3.29,maxZ:-1.89},
  {name:"tower",minX:3.05,maxX:4.96,minZ:-.42,maxZ:1.48},
- {name:"food",minX:1.68,maxX:2.92,minZ:1.10,maxZ:2.33},
+ {name:"food",minX:.53,maxX:1.77,minZ:1.84,maxZ:3.04},
  {name:"chair",minX:1.43,maxX:2.78,minZ:-1.54,maxZ:-.20}
 ];
 const STEP=.25;
@@ -18,7 +18,7 @@ export function groundHeight(x,z){
  return .071;
 }
 export function blocked(x,z,extra=0){
- if(!inside(x,ROOM.minX,ROOM.maxX)||!inside(z,ROOM.minZ,ROOM.maxZ))return true;
+ if(!inside(x,ROOM.minX+extra,ROOM.maxX-extra)||!inside(z,ROOM.minZ+extra,ROOM.maxZ-extra))return true;
  return OBSTACLES.some(o=>inside(x,o.minX-extra,o.maxX+extra)&&inside(z,o.minZ-extra,o.maxZ+extra));
 }
 const gridPoint=(x,z)=>({
@@ -28,29 +28,29 @@ const gridPoint=(x,z)=>({
 const xyz=(i,j)=>({x:ROOM.minX+i*STEP,z:ROOM.minZ+j*STEP});
 const index=(i,j)=>j*XCELLS+i;
 const neighbors=[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
-function nearest(point){
- if(!blocked(point.x,point.z))return{x:point.x,z:point.z};
+function nearest(point,radius=0){
+ if(!blocked(point.x,point.z,radius))return{x:point.x,z:point.z};
  let best=null,d=Infinity;
  for(let j=0;j<ZCELLS;j++)for(let i=0;i<XCELLS;i++){
   const p=xyz(i,j);
-  if(blocked(p.x,p.z))continue;
+  if(blocked(p.x,p.z,radius))continue;
   const distance=Math.hypot(p.x-point.x,p.z-point.z);
   if(distance<d){d=distance;best=p}
  }
  return best||{x:0,z:0};
 }
-export function clearLine(a,b){
+export function clearLine(a,b,radius=0){
  const length=Math.hypot(a.x-b.x,a.z-b.z);
  const count=Math.max(1,Math.ceil(length/.075));
  for(let k=0;k<=count;k++){
   const t=k/count;
-  if(blocked(a.x+(b.x-a.x)*t,a.z+(b.z-a.z)*t))return false;
+  if(blocked(a.x+(b.x-a.x)*t,a.z+(b.z-a.z)*t,radius))return false;
  }
  return true;
 }
-export function route(from,to){
- const start=nearest(from),end=nearest(to);
- if(clearLine(start,end))return[end];
+export function route(from,to,radius=0){
+ const start=nearest(from,radius),end=nearest(to,radius);
+ if(clearLine(start,end,radius))return[end];
  const s=gridPoint(start.x,start.z),g=gridPoint(end.x,end.z);
  const first=index(s.i,s.j),last=index(g.i,g.j),N=XCELLS*ZCELLS;
  const gcost=new Float64Array(N).fill(Infinity),came=new Int32Array(N).fill(-1),seen=new Uint8Array(N);
@@ -69,15 +69,15 @@ export function route(from,to){
    const ni=node.i+dx,nj=node.j+dz;
    if(ni<0||ni>=XCELLS||nj<0||nj>=ZCELLS)continue;
    const at=xyz(ni,nj),key=index(ni,nj);
-   if(seen[key]||blocked(at.x,at.z))continue;
-   if(dx&&dz&&(blocked(xyz(node.i+dx,node.j).x,xyz(node.i+dx,node.j).z)||blocked(xyz(node.i,node.j+dz).x,xyz(node.i,node.j+dz).z)))continue;
+   if(seen[key]||blocked(at.x,at.z,radius))continue;
+   if(dx&&dz&&(blocked(xyz(node.i+dx,node.j).x,xyz(node.i+dx,node.j).z,radius)||blocked(xyz(node.i,node.j+dz).x,xyz(node.i,node.j+dz).z,radius)))continue;
    const cost=gcost[node.k]+Math.hypot(dx,dz);
    if(cost>=gcost[key])continue;
    came[key]=node.k;gcost[key]=cost;
    open.push({i:ni,j:nj,k:key,f:cost+heuristic(ni,nj)});
   }
  }
- if(!reached)return clearLine(start,end)?[end]:[];
+ if(!reached)return clearLine(start,end,radius)?[end]:[];
  const raw=[end];
  let current=last;
  while(current!==first){
@@ -90,7 +90,7 @@ export function route(from,to){
  const simple=[];
  for(let i=0;i<raw.length-1;){
   let k=raw.length-1;
-  while(k>i+1&&!clearLine(raw[i],raw[k]))k--;
+  while(k>i+1&&!clearLine(raw[i],raw[k],radius))k--;
   simple.push(raw[k]);i=k;
  }
  return simple.filter((p,k)=>k>0||Math.hypot(p.x-start.x,p.z-start.z)>.035);

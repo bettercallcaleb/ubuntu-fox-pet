@@ -25,3 +25,5 @@ real3d/rtx4090/.build/
 real3d/rtx4090/*.blend
 real3d/rtx4090/*.tar.xz
 real3d/rtx4090/telemetry/*.raw.csv
+
+real3d/assets/premium/

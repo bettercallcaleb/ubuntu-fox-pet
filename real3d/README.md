@@ -1,3 +1,9 @@
+# FOX / 23 — Licensed native-animation fox migration pipeline
+
+Premium model support is now opt-in: a local FBX/Blend/GLB is converted and verified by Blender/Node, placed in an ignored assets/premium directory, and loaded through a native-animation controller that replaces the old four-leg IK only for that variant. Walk/idle/action semantic mappings prefer in-place clips, horizontal root motion is anchored, and the default FOX / 22 remains the initial scene with one-click fallback. **No commercial model has been purchased or included**; the loader has been tested using a legally available 29-bone/3-clip model surrogate. See [licensed model onboarding and limitations](PREMIUM_FOX.md).
+
+---
+
 # FOX / 22 — Anatomical four-leg gait and paw contact
 
 The previous front paws pitched toward the floor during the forward swing, with curled-back tips; extended hind legs could nearly lock at a 178-degree knee. The gait now aims all four foot-to-toe chains in the animal's forward direction with front/hind-specific angles and independently smoothed swing flex. The analytic IK solver has optional anatomical knee limits (173 degrees front and 170 degrees hind) instead of the near-straight singularity. The root rides slightly lower so these limits do not cause persistent floating feet.

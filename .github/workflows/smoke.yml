@@ -35,6 +35,12 @@ jobs:
           node check-leg-v22.mjs
           node --check check-leg-v22-live.mjs
           node check-interaction-v21.mjs
+          node check-premium-v23.mjs
+          node --check check-premium-v23-live.mjs
+          node --check tools/verify-premium-fox.mjs
+          node tools/verify-premium-fox.mjs assets/Fox_Enhanced.glb > /dev/null
+          /usr/bin/python3 -m py_compile tools/convert-premium-fox.py
+          bash -n tools/install-premium-fox.sh
           node check-facing-v16.mjs
           node check-turn-v17.mjs
           node check-fox-axis-v18.mjs

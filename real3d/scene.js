@@ -8,6 +8,7 @@ import {headingTo,turnToward,gazeOffset,wrapAngle,wrappedOrbit} from "./fox-faci
 import {REALISTIC_MOUNT_YAW} from "./fox-axis-v18.js";
 import {neutralizeRealisticFoxHead} from "./neutral-head-v19.js";
 import {stabilizeHeadSkinning} from "./head-weights-v20.js";
+import {createPremiumFoxController,analyzePremiumModel,premiumForwardYaw} from "./premium-fox-v23.js";
 import {gradePetStroke,isBallFree,stepRollingBall,throwVelocity} from "./physical-interaction-v21.js";
 
 const TAU=Math.PI*2;
@@ -443,12 +444,35 @@ const fox={
 foxRoot.position.copy(fox.pos);
 foxRoot.rotation.y=.2;
 
-const rigged={ready:false,enabled:true,holder:group(foxRoot),root:null,mixer:null,actions:{},active:null,names:[],fur:null,furEnabled:false,variant:"realistic",boneCount:0,loading:false,boneRest:null,bones:null,motionLevel:0};
+const rigged={ready:false,enabled:true,holder:group(foxRoot),root:null,mixer:null,actions:{},active:null,names:[],fur:null,furEnabled:false,variant:"realistic",boneCount:0,loading:false,boneRest:null,bones:null,motionLevel:0,premiumController:null};
 const variants={
+ premium:{asset:"./assets/premium/fox-premium.glb",label:"Licensed fox with native skeletal animation",height:1.20},
  realistic:{asset:"./assets/Fox_Realistic_Rigged.glb",idle:"Look around",walk:"Walk",tail:"Tail wag",jump:"Walk",label:"Realistic fur fox: 29-bone skin",height:1.20},
  enhanced:{asset:"./assets/Fox_Enhanced.glb",idle:"Look around",walk:"Walk",tail:"Tail wag",jump:"Walk",label:"Enhanced 29-bone fox",height:1.43},
  classic:{asset:"./assets/Fox.glb",idle:"Survey",walk:"Walk",tail:"Survey",jump:"Run",label:"Classic 24-bone fox",height:1.21}
 };
+let premiumAvailable=false;
+let premiumConfig={forwardAxis:"+Z",modelHeight:1.20,walkCycleDistance:.65};
+async function checkPremiumAsset(){
+ try{
+  const response=await fetch(variants.premium.asset,{method:"HEAD",cache:"no-store"});
+  premiumAvailable=response.ok&&Number(response.headers.get("content-length")||100000)>1000;
+  if(premiumAvailable){
+   try{
+    const config=await fetch("./assets/premium/fox-premium.json",{cache:"no-store"});
+    if(config.ok){
+     const value=await config.json();
+     if(["+X","-X","+Z","-Z"].includes(value.forwardAxis))premiumConfig.forwardAxis=value.forwardAxis;
+     if(Number.isFinite(value.modelHeight)&&value.modelHeight>.25&&value.modelHeight<3)premiumConfig.modelHeight=value.modelHeight;
+     if(Number.isFinite(value.walkCycleDistance)&&value.walkCycleDistance>.15&&value.walkCycleDistance<3)premiumConfig.walkCycleDistance=value.walkCycleDistance;
+    }
+   }catch(e){console.warn("Premium tuning config ignored",e)}
+  }
+ }catch(e){premiumAvailable=false}
+ $("premium").hidden=!premiumAvailable;
+ return premiumAvailable;
+}
+checkPremiumAsset();
 rigged.holder.rotation.y=REALISTIC_MOUNT_YAW;
 function setRiggedEnabled(value){
  rigged.enabled=Boolean(value && rigged.ready);
@@ -462,7 +486,7 @@ function setRiggedEnabled(value){
 }
 let groundedGait=createGroundedGait({scene,fox,foxRoot,rigged});
 function setRigClip(stateName){
- if(!rigged.ready||rigged.variant==="realistic")return;
+ if(!rigged.ready||rigged.variant==="realistic"||rigged.variant==="premium")return;
  const variant=variants[rigged.variant];
  const name=stateName==="walk"?variant.walk:stateName==="tail"?variant.tail:stateName==="jump"?variant.jump:variant.idle;
  if(rigged.active===name)return;
@@ -479,10 +503,27 @@ function setRigClip(stateName){
  rigged.active=name;
 }
 function loadVariant(name){
- if(rigged.loading||!variants[name])return;
+ if(rigged.loading||!variants[name]||(name==="premium"&&!premiumAvailable))return;
  rigged.loading=true;
  const desired=variants[name];
  new GLTFLoader().load(desired.asset,gltf=>{
+  let prospectiveController=null;
+  if(name==="premium"){
+   const diagnosis=analyzePremiumModel(gltf.scene,gltf.animations);
+   if(!diagnosis.ok){
+    rigged.loading=false;
+    say("Premium model rejected: "+diagnosis.errors.join("; "));
+    return;
+   }
+   try{
+    prospectiveController=createPremiumFoxController(gltf.scene,gltf.animations,{walkCycleDistance:premiumConfig.walkCycleDistance});
+   }catch(error){
+    rigged.loading=false;
+    say("Premium animation import failed: "+error.message);
+    return;
+   }
+  }
+  if(rigged.premiumController){rigged.premiumController.dispose();rigged.premiumController=null}
   if(rigged.mixer)rigged.mixer.stopAllAction();
   groundedGait.dispose();
   if(rigged.root){
@@ -506,13 +547,13 @@ function loadVariant(name){
   model.updateMatrixWorld(true);
   let bound=new THREE.Box3().setFromObject(model);
   const dims=bound.getSize(new THREE.Vector3());
-  const scale=desired.height/Math.max(.01,dims.y);
+  const scale=(name==="premium"?premiumConfig.modelHeight:desired.height)/Math.max(.01,dims.y);
   model.scale.setScalar(scale);
   model.updateMatrixWorld(true);
   bound=new THREE.Box3().setFromObject(model);
   const center=bound.getCenter(new THREE.Vector3());
   model.position.set(-center.x,-bound.min.y,-center.z);
-  rigged.holder.rotation.y=REALISTIC_MOUNT_YAW;
+  rigged.holder.rotation.y=name==="premium"?premiumForwardYaw(premiumConfig.forwardAxis):REALISTIC_MOUNT_YAW;
   rigged.holder.add(model);
   model.traverse(child=>{
    if(child.isMesh||child.isSkinnedMesh){
@@ -549,25 +590,30 @@ function loadVariant(name){
    rigged.fur=buildMicroFur(realisticSkin,36000,4137);
    rigged.furEnabled=Boolean(rigged.fur);
   }
-  rigged.mixer=new THREE.AnimationMixer(model);
+  rigged.premiumController=prospectiveController;
+  rigged.mixer=prospectiveController?.mixer||new THREE.AnimationMixer(model);
   rigged.actions={};rigged.names=[];
   for(const clip of gltf.animations){
    rigged.names.push(clip.name);
-   rigged.actions[clip.name]=rigged.mixer.clipAction(clip);
-   rigged.actions[clip.name].setLoop(THREE.LoopRepeat,Infinity);
+   if(name!=="premium"){
+    rigged.actions[clip.name]=rigged.mixer.clipAction(clip);
+    rigged.actions[clip.name].setLoop(THREE.LoopRepeat,Infinity);
+   }
   }
   groundedGait=createGroundedGait({scene,fox,foxRoot,rigged});
   rigged.variant=name;rigged.active=null;rigged.ready=true;rigged.loading=false;
   setRiggedEnabled(true);
+  if(name==="premium")fox.moveGate=1;
   setRigClip("idle");
-  $("variant").innerHTML="<span>◈</span>"+(name==="realistic"?"Real Fur":name==="enhanced"?"Enhanced":"Classic");
+  $("variant").innerHTML="<span>◈</span>"+(name==="premium"?"Premium Fox":name==="realistic"?"Real Fur":name==="enhanced"?"Enhanced":"Classic");
   $("variant").classList.toggle("active",name!=="classic");
-  $("fur").disabled=name==="enhanced";
-  $("fur").innerHTML=name==="realistic"?"<span>◎</span>Focus Fox":"<span>≋</span>Fur detail";
+  $("fur").disabled=name==="enhanced"||name==="premium";
+  $("fur").innerHTML=name==="realistic"?"<span>◎</span>Focus Fox":name==="premium"?"<span>♫</span>Native Motion":"<span>≋</span>Fur detail";
   $("fur").classList.toggle("active",name==="realistic"&&focusMode);
-  say(desired.label+" loaded, with "+rigged.names.join(" / ")+" animations.");
+  say(desired.label+" loaded · "+rigged.names.length+" animation clips.");
   $("status").textContent="GPU: "+gpuName+" · "+rigged.boneCount+" bone skinning · "+rigged.names.length+" animation clips · shadows";
   window.__fox3dRig={variant:name,animations:rigged.names,skinned:true,bones:rigged.boneCount,furStrands:rigged.fur?rigged.fur.geometry.getAttribute("position").count/3:0,dimensions:bound.getSize(new THREE.Vector3()).toArray()};
+  $("model-subtitle").textContent=name==="premium"?"Licensed animated fox · "+rigged.boneCount+" bones · "+rigged.names.length+" native clips":"29-bone fox · anatomical paws · premium-model ready";
   if(name==="realistic"&&!rigged.focusInit){
    rigged.focusInit=true;
    setFocusMode(true);
@@ -577,7 +623,8 @@ function loadVariant(name){
  },undefined,error=>{
   console.error("3D model load error",name,error);
   rigged.loading=false;
-  if(name==="realistic")loadVariant("enhanced");
+  if(name==="premium")say("Premium asset could not be loaded; previous fox is unchanged.");
+  else if(name==="realistic")loadVariant("enhanced");
   else if(name!=="classic")loadVariant("classic");
   else {rigged.ready=false;setRiggedEnabled(false);say("Using procedural fox fallback.");}
  });
@@ -595,7 +642,8 @@ $("fur").addEventListener("click",()=>{
  say(rigged.furEnabled?"20,000 skinned fur strands enabled.":"Fur overlay hidden.");
 });
 $("fur").classList.remove("active");
-$("variant").addEventListener("click",()=>loadVariant(rigged.variant==="realistic"?"enhanced":rigged.variant==="enhanced"?"classic":"realistic"));
+$("variant").addEventListener("click",()=>loadVariant(rigged.variant==="realistic"?(premiumAvailable?"premium":"enhanced"):rigged.variant==="premium"?"enhanced":rigged.variant==="enhanced"?"classic":"realistic"));
+$("premium").addEventListener("click",()=>loadVariant(rigged.variant==="premium"?"realistic":"premium"));
 $("neural").addEventListener("click",()=>{window.location.href="./neural/";});
 $("cinema").addEventListener("click",()=>{window.location.href="./rtx4090/";});
 
@@ -638,8 +686,8 @@ function updateFox(dt,t){
  }
  if(rigged.ready && rigged.enabled){
   const clip=fox.isWalking?"walk":fox.action==="jump"?"jump":fox.action==="pet"||fox.action==="play"?"tail":"idle";
-  setRigClip(clip);
-  if(rigged.variant!=="realistic")rigged.mixer.update(dt);
+  if(rigged.variant==="premium")rigged.premiumController?.update(dt,{walking:fox.isWalking,stepping:fox.stepping,action:fox.action,speed:fox.speed||pace});
+  else{setRigClip(clip);if(rigged.variant!=="realistic")rigged.mixer.update(dt);}
  }
  fox.root.position.copy(fox.pos);
  fox.root.rotation.y=fox.orientation;
@@ -675,7 +723,7 @@ function updateFox(dt,t){
  }else if(fox.action==="play"&&!fox.target){
   head.rotation.z=mix(head.rotation.z,.18*Math.sin(t*7),.03);
  }
- if(fox.action==="jump"&&!fox.target&&(rigged.variant!=="realistic"||!rigged.enabled)){
+ if(fox.action==="jump"&&!fox.target&&(!rigged.enabled||!["realistic","premium"].includes(rigged.variant))){
   const local=t-fox.actionTime,progress=local/1.1;
   if(progress<1){fox.root.position.y+=Math.sin(progress*Math.PI)*.68;torso.rotation.z-=Math.sin(progress*Math.PI)*.12;}
   else fox.action="idle";
@@ -1072,6 +1120,7 @@ $("debug").innerHTML="GPU: "+gpuName+"<br>Vendor: "+gpuVendor+"<br>Renderer: THR
 window.__fox3d={gpuName,gpuVendor,renderer,scene,camera,fox,state,task,updateFox,walkTo,orbit,rigged,updateCamera,lookAtPoint,setFaceCamera,getFaceCamera:()=>faceCamera};
 window.__fox3dGait={diagnostics:()=>groundedGait.diagnostics(),snap:()=>groundedGait.snap(),groundHeight};
 window.__fox3dNavigation={route:findRoute,blocked:pathBlocked,info:NAV_INFO};
+window.__fox3dPremium={available:()=>premiumAvailable,settings:()=>({...premiumConfig}),probe:checkPremiumAsset,diagnostics:()=>rigged.premiumController?.diagnostics()||null,load:()=>loadVariant("premium")};
 window.__fox3dInteraction={ball,fetchSession,beginFetch,petFox,updateRollingBall,gradePetStroke};
 window.__fox3dReady=true;
 

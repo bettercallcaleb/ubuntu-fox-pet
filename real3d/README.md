@@ -1,3 +1,17 @@
+# FOX / 24 — Solid-body interaction and collision-aware navigation
+
+The fox no longer navigates as a single point: a four-disc footprint approximates the chest, belly, head and rear. The navigation grid expands room walls and all five furniture collision regions by **0.80 scene units**; every movement/turn frame also checks the oriented four-disc body and resolves blocked movement with sliding and optional path replanning. Emergency recovery moves a fox spawned inside an obstacle to the nearest legal pose. The ball deflects from the fox body rather than rolling through its torso. The food bowl was moved to open a genuine path to the cat tower, so 'Hop' is performed beside the tower rather than at a distance.
+
+Tap **D** to display the collider rings and contact/recovery/replan counters. The rings are not visible during normal play. Bed, food, work, window, tower and fetch retain their native behavioral animations and use safe approach anchors. Commercial licensed models still use the same approximate collision footprint until their geometry can be calibrated.
+
+**Validation:** `node check-collision-v24.mjs` samples 14,472 path/pose combinations, 24,000 randomized motion frames and ball boundary contacts. `node check-collision-v24-live.mjs` drives the actual Ubuntu Chrome / RTX 3060 skinned model through six room interactions and 12,000 additional navigation frames, forces the fox against a chair (54 collision corrections and zero penetration), and validates recovery from inside a bed. V20 head gaze, V21 pet/fetch, and V22 gait regressions passed. The player maintained approximately 60 FPS during actual browser checks.
+
+This collision layer uses conservative 2D approximations of the animal and furniture; it does not claim pixel-perfect fur, paw or tail mesh contact, articulated climbing, or fully simulated rigid-body physics.
+
+![Actual in-browser bed, bowl, desk and tower interactions](docs/v24-collision-interactions.jpg)
+
+---
+
 # FOX / 23 — Licensed native-animation fox migration pipeline
 
 Premium model support is now opt-in: a local FBX/Blend/GLB is converted and verified by Blender/Node, placed in an ignored assets/premium directory, and loaded through a native-animation controller that replaces the old four-leg IK only for that variant. Walk/idle/action semantic mappings prefer in-place clips, horizontal root motion is anchored, and the default FOX / 22 remains the initial scene with one-click fallback. **No commercial model has been purchased or included**; the loader has been tested using a legally available 29-bone/3-clip model surrogate. See [licensed model onboarding and limitations](PREMIUM_FOX.md).

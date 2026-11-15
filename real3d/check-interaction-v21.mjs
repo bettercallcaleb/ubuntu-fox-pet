@@ -7,10 +7,10 @@ assert.equal(gradePetStroke({duration:100,distance:300,contact:90}).accepted,fal
 assert.equal(gradePetStroke({duration:400,distance:180,contact:100}).accepted,false);
 const stroke=gradePetStroke({duration:340,distance:160,contact:300});
 assert.ok(stroke.accepted&&stroke.joy>=3&&stroke.bond>=1);
-assert.equal(isBallFree(2.3,1.7,.205,options.room,options.obstacles),false);
+assert.equal(isBallFree(1.15,2.44,.205,options.room,options.obstacles),false);
 assert.equal(isBallFree(0,1.2,.205,options.room,options.obstacles),true);
 
-const ball={x:0,z:1.15,vx:4.2,vz:0};
+const ball={x:0,z:2.44,vx:4.2,vz:0};
 let hits=0;
 for(let i=0;i<300;i++){
  const next=stepRollingBall(ball,1/60,options);
@@ -18,7 +18,7 @@ for(let i=0;i<300;i++){
  assert.ok(Number.isFinite(ball.x)&&Number.isFinite(ball.z)&&Number.isFinite(ball.vx)&&Number.isFinite(ball.vz));
  assert.ok(isBallFree(ball.x,ball.z,.205-1e-3,options.room,options.obstacles),"Ball crossed furniture or wall");
 }
-assert.ok(hits>0,"Expected collision with food bowl obstacle");
+assert.ok(hits>0,"Expected collision with room boundary or obstacle");
 assert.ok(Math.hypot(ball.vx,ball.vz)<.12,"Ball should settle under friction");
 const wall={x:options.room.maxX-.27,z:2.8,vx:3.2,vz:0};
 stepRollingBall(wall,.08,options);

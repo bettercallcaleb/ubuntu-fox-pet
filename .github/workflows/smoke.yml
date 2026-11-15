@@ -32,6 +32,9 @@ jobs:
           node --check grounded-gait-v13.js
           node --check navigation-v13.js
           node check-v13.mjs
+          node check-collision-v24.mjs
+          node --check check-collision-v24-live.mjs
+          node --check body-collision-v24.js
           node check-leg-v22.mjs
           node --check check-leg-v22-live.mjs
           node check-interaction-v21.mjs

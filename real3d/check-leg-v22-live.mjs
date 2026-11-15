@@ -14,8 +14,8 @@ let ready=false;
 for(let i=0;i<50;i++){ready=await evaluate("Boolean(window.__fox3dRig?.variant==='realistic'&&window.__fox3d?.rigged.ready&&window.__fox3dGait.diagnostics().ready)");if(ready)break;await new Promise(r=>setTimeout(r,200))}
 assert.ok(ready,"Realistic fox did not initialize");
 const tests=[
- {name:"east",start:[-.8,.2],end:[.8,.2]},
- {name:"west",start:[.8,.2],end:[-.8,.2]},
+ {name:"east",start:[-1,.8],end:[.5,.8]},
+ {name:"west",start:[.5,.8],end:[-1,.8]},
  {name:"north",start:[-.7,.75],end:[-.7,-.55]},
  {name:"south",start:[-.7,-.55],end:[-.7,.75]}
 ];

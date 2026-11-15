@@ -20,7 +20,7 @@ assert.ok(angularDistance(inverse,.36)<1e-7,"camera must orbit in both direction
 const source=fs.readFileSync(new URL("./scene.js",import.meta.url),"utf8");
 const motion=fs.readFileSync(new URL("./living-motion-v14.js",import.meta.url),"utf8");
 const index=fs.readFileSync(new URL("./index.html",import.meta.url),"utf8");
-for(const str of ["lookAtPoint(point)","setFaceCamera(enabled)","wrappedOrbit(orbit.azimuth,-dx*.006)","if(button===2||(button===0&&shift))","fox.faceAngleTarget=headingTo(fox.pos,point)"]) {
+for(const str of ["lookAtPoint(point)","setFaceCamera(enabled)","wrappedOrbit(orbit.azimuth,-dx*.006)","if(active.button===2||(active.button===0&&active.shift))","fox.faceAngleTarget=headingTo(fox.pos,point)"]) {
  assert.ok(source.includes(str),"Missing interaction "+str);
 }
 assert.ok(motion.includes("gazeOffset(fox.orientation,fox.pos,point)"),"Head gaze not connected");

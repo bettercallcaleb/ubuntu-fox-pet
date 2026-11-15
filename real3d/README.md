@@ -1,3 +1,13 @@
+# FOX / 21 — Direct interaction: tactile petting and physical ball play
+
+The desktop fox now distinguishes a click from a sustained stroke: press and drag across the visible fox to pet it. Stroke duration, pointer contact and travel must all qualify before the larger joy/bond response is awarded. A single click is still a brief pat. Idle pointer hover steers the animal's attention rather than automatically awarding affection.
+
+Drag the ball to reposition it and release to throw using recent cursor velocity. The rolling ball is integrated with time-stepped friction, room boundary rebounds and circle-versus-furniture contact resolution; narrow obstacle gaps are checked to prevent tunnelling. The fox looks at the ball, routes around furniture to intercept it and nudges it on contact. The animal remains kinematic, with approximate nose contact rather than full rigid-body or jaw-grasp physics. Existing 29-bone gait, sleep/eat/play blending, head-skinning fix and 360° orbit controls remain intact.
+
+Controls: drag empty space to orbit; drag the ball to throw; drag across the fox to pet; click elsewhere to walk; right-click or Shift-click to look; `F` focus; `L` face camera. Tests: `node check-interaction-v21.mjs` and with local debug Chrome on port 9262 `FOX_CDP_PORT=9262 node check-interaction-v21-live.mjs` (the latter drives real pointer events and verifies chase, patting and zero JS exceptions). Tested on Ubuntu with RTX 3060 at approximately 60 FPS. No cloud API is required.
+
+---
+
 # FOX / 20 — Stable, independent head turning
 
 The v19 neutral head correction improved the resting appearance but left the skull weighted across the chest, neck and head. Rotating the head joint stretched the face, ears and cheeks. `head-weights-v20.js` now transfers torso contributions to the head over a smooth bind-space falloff while preserving ear articulation, so skull triangles move as a rigid group and the base of the neck still bends naturally. The v19 mesh correction is performed first, followed by the skin-weight fix and then fur generation. The original asset and skeleton hierarchy are unchanged.
